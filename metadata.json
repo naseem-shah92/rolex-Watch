@@ -1,0 +1,6 @@
+{
+  "name": "Luxury Watch Collection",
+  "description": "A complete, high-end luxury watch e-commerce website featuring interactive scroll-controlled video, collection grid, product details, active shopping cart, and mock checkout flow.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,4224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script>
+    // Suppress benign Vite WebSocket / HMR connection errors in the preview environment
+    (function() {
+      const filterPatterns = ['websocket', 'hmr', '[vite]', 'ws:', 'web-socket', 'socket'];
+      
+      const originalConsoleError = console.error;
+      console.error = function(...args) {
+        const msg = args.map(arg => {
+          try {
+            return typeof arg === 'string' ? arg : (arg && arg.message) || JSON.stringify(arg);
+          } catch(e) {
+            return String(arg);
+          }
+        }).join(' ').toLowerCase();
+        
+        if (filterPatterns.some(pat => msg.includes(pat))) {
+          return;
+        }
+        originalConsoleError.apply(console, args);
+      };
+
+      const originalConsoleWarn = console.warn;
+      console.warn = function(...args) {
+        const msg = args.map(arg => {
+          try {
+            return typeof arg === 'string' ? arg : (arg && arg.message) || JSON.stringify(arg);
+          } catch(e) {
+            return String(arg);
+          }
+        }).join(' ').toLowerCase();
+        
+        if (filterPatterns.some(pat => msg.includes(pat))) {
+          return;
+        }
+        originalConsoleWarn.apply(console, args);
+      };
+
+      window.addEventListener('unhandledrejection', function(event) {
+        let reasonStr = '';
+        if (event.reason) {
+          if (typeof event.reason === 'string') {
+            reasonStr = event.reason;
+          } else {
+            reasonStr = event.reason.message || event.reason.stack || String(event.reason);
+          }
+        }
+        if (reasonStr && filterPatterns.some(pat => reasonStr.toLowerCase().includes(pat))) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }, true);
+
+      window.addEventListener('error', function(event) {
+        let errorStr = event.message || '';
+        if (event.error) {
+          errorStr += ' ' + (event.error.message || event.error.stack || String(event.error));
+        }
+        if (errorStr && filterPatterns.some(pat => errorStr.toLowerCase().includes(pat))) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }, true);
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROLEX — Time is Perfected</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+  
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- YouTube Iframe API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  
+  <style>
+    :root {
+      --black: #08080a;
+      --dark: #111113;
+      --card: #141416;
+      --gold: #c9a84c;
+      --gold-light: #e8c060;
+      --text: #f0ede8;
+      --muted: rgba(240, 237, 232, 0.55);
+      --font-serif: 'Playfair Display', Georgia, serif;
+      --font-sans: 'Inter', system-ui, sans-serif;
+      --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--black);
+      color: var(--text);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+    }
+
+    body {
+      overflow-x: hidden;
+      background-color: var(--black);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--black);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--card);
+      border: 2px solid var(--black);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--gold);
+    }
+
+    /* Typography */
+    h1, h2, h3, h4, .font-serif {
+      font-family: var(--font-serif);
+    }
+
+    .text-gold { color: var(--gold); }
+    .bg-gold { background-color: var(--gold); }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 4%;
+      z-index: 1000;
+      transition: var(--transition);
+    }
+
+    nav.scrolled {
+      background: rgba(8, 8, 10, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 16px 4%;
+      border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+    }
+
+    .nav-logo {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--gold);
+      text-decoration: none;
+      letter-spacing: 2px;
+      transition: var(--transition);
+    }
+
+    .nav-logo:hover {
+      color: var(--gold-light);
+      text-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
+    }
+
+    .nav-pill-container {
+      display: flex;
+      background: rgba(20, 20, 22, 0.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(240, 237, 232, 0.1);
+      border-radius: 9999px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .nav-link {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .nav-link:hover { color: var(--gold); }
+    .nav-link.active {
+      background: var(--gold);
+      color: var(--black);
+      font-weight: 600;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cart-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      transition: var(--transition);
+    }
+
+    .cart-btn:hover { color: var(--gold); transform: scale(1.05); }
+
+    .cart-count {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--gold);
+      color: var(--black);
+      font-size: 10px;
+      font-weight: 700;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--black);
+    }
+
+    .shop-btn {
+      background: var(--gold);
+      color: var(--black);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 10px 24px;
+      border-radius: 9999px;
+      transition: var(--transition);
+      border: 1px solid var(--gold);
+      cursor: pointer;
+    }
+
+    .shop-btn:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      box-shadow: 0 4px 15px rgba(201, 168, 76, 0.4);
+      transform: translateY(-2px);
+    }
+
+    /* Page Routing system */
+    .page {
+      display: none;
+      flex-grow: 1;
+      opacity: 0;
+      transform: translateY(15px);
+    }
+
+    .page.active {
+      display: block;
+      animation: pageFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes pageFadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Hero Section */
+    .hero-container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero-video-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .hero-video-container::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    #hero-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      border: none;
+      transform: scale(1);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(8, 8, 10, 0.95) 0%, rgba(8, 8, 10, 0.75) 45%, rgba(8, 8, 10, 0.1) 100%);
+      z-index: 2;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      padding: 0 8%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: left;
+      gap: 30px;
+    }
+
+    .hero-left {
+      max-width: 680px;
+      margin: 0;
+    }
+
+    .hero-eyebrow {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--gold);
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .hero-title {
+      font-size: clamp(44px, 7.5vw, 82px);
+      line-height: 1.05;
+      font-style: italic;
+      color: var(--gold);
+      letter-spacing: -3px;
+      margin-bottom: 24px;
+    }
+
+    .hero-desc {
+      font-size: clamp(14px, 2vw, 17px);
+      line-height: 1.7;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: flex-start;
+    }
+
+    .hero-btn-filled {
+      background: var(--gold);
+      color: var(--black);
+      border: 1px solid var(--gold);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 34px;
+      border-radius: 9999px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .hero-btn-filled:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      box-shadow: 0 4px 20px rgba(201, 168, 76, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .hero-btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(240, 237, 232, 0.3);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 34px;
+      border-radius: 9999px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .hero-btn-ghost:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(201, 168, 76, 0.05);
+      transform: translateY(-2px);
+    }
+
+    /* Mobile-only hide for hero text and scroll hint to show only the video */
+    @media (max-width: 768px) {
+      .hero-content {
+        display: none !important;
+      }
+      .hero-scroll-hint {
+        display: none !important;
+      }
+    }
+
+    /* Scroll Down Indicator */
+    .hero-scroll-hint {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      cursor: pointer;
+    }
+
+    .hero-scroll-hint:hover {
+      color: var(--gold);
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 40px;
+      background: rgba(240, 237, 232, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scroll-line::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--gold);
+      animation: pulseDown 2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes blurRise {
+      from { opacity: 0; filter: blur(10px); transform: translateY(50px); }
+      to { opacity: 1; filter: blur(0); transform: translateY(0); }
+    }
+
+    @keyframes floatInFromRight {
+      from { opacity: 0; transform: translateX(100px) scale(0.95); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    @keyframes pulseDown {
+      0% { transform: scaleY(0); transform-origin: top; }
+      50% { transform: scaleY(1); transform-origin: top; }
+      55% { transform: scaleY(1); transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
+    }
+
+    .anim-eyebrow { animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
+    .anim-h1 { animation: blurRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both; }
+    .anim-paragraph { animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both; }
+    .anim-buttons { animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.9s both; }
+    .anim-watch { 
+      animation: floatInFromRight 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both, float 6s ease-in-out infinite 1.8s; 
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      background: var(--dark);
+      border-top: 1px solid rgba(201, 168, 76, 0.1);
+      border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+      padding: 24px 6%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        padding: 18px 4%;
+      }
+    }
+
+    .stat-item h3 {
+      font-size: clamp(28px, 4vw, 38px);
+      color: var(--gold);
+      font-style: italic;
+      margin-bottom: 6px;
+    }
+
+    .stat-item p {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    /* Collection Section */
+    .collection-section {
+      padding: 40px 6% 80px 6%;
+      background: var(--black);
+    }
+
+    .collection-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .collection-header h2 {
+      font-size: clamp(32px, 5vw, 46px);
+      font-style: italic;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .collection-header p {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .grid-collection {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-collection {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .grid-collection {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card 1 spans 2 columns on desktop */
+    .watch-card.card-wide {
+      grid-column: span 2;
+      display: flex;
+      flex-direction: row;
+    }
+
+    @media (max-width: 1024px) {
+      .watch-card.card-wide {
+        grid-column: span 1;
+        flex-direction: column;
+      }
+    }
+
+    .watch-card {
+      background: var(--card);
+      border: 1px solid rgba(240, 237, 232, 0.05);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s, box-shadow 0.4s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .watch-card:hover {
+      transform: translateY(-10px);
+      border-color: rgba(201, 168, 76, 0.4);
+      box-shadow: 0 15px 40px rgba(201, 168, 76, 0.1);
+    }
+
+    .watch-card-link-area {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      flex-grow: 1;
+    }
+
+    .card-img-wrapper, .card-img-wrap {
+      overflow: hidden;
+      position: relative;
+      background: rgba(8, 8, 10, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .watch-card:not(.card-wide) .card-img-wrapper,
+    .watch-card:not(.card-wide) .card-img-wrap {
+      aspect-ratio: 1 / 1;
+    }
+
+    .card-wide .card-img-wrapper,
+    .card-wide .card-img-wrap {
+      width: 50%;
+      aspect-ratio: 1 / 1;
+    }
+
+    @media (max-width: 1024px) {
+      .card-wide .card-img-wrapper,
+      .card-wide .card-img-wrap {
+        width: 100%;
+      }
+    }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .watch-card:hover .card-img {
+      transform: scale(1.06);
+    }
+
+    .card-badge, .card-tag {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(8, 8, 10, 0.85);
+      backdrop-filter: blur(5px);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 500;
+      z-index: 2;
+    }
+
+    .card-content, .card-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-grow: 1;
+    }
+
+    .card-wide .card-content {
+      width: 50%;
+    }
+
+    @media (max-width: 1024px) {
+      .card-wide .card-content {
+        width: 100%;
+      }
+    }
+
+    .card-wide-specs {
+      display: none;
+    }
+
+    @media (min-width: 1025px) {
+      .card-wide-specs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 20px;
+        margin-top: 18px;
+        margin-bottom: 18px;
+        padding-top: 16px;
+        border-top: 1px dashed rgba(240, 237, 232, 0.15);
+      }
+
+      .card-spec-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .card-spec-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--gold);
+        font-weight: 700;
+      }
+
+      .card-spec-value {
+        font-size: 12px;
+        color: var(--text);
+        font-weight: 500;
+        line-height: 1.3;
+        white-space: normal;
+      }
+    }
+
+    .card-brand {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      color: var(--gold);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .card-title, .card-name {
+      font-size: 24px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .card-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .card-footer-row, .card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      gap: 16px;
+    }
+
+    .card-price {
+      font-size: 20px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .card-add-btn, .card-add {
+      background: var(--gold);
+      color: var(--black);
+      border: 1px solid var(--gold);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .card-add-btn:hover, .card-add:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      box-shadow: 0 0 15px rgba(201, 168, 76, 0.3);
+    }
+
+    /* Featured Banner */
+    .featured-banner {
+      position: relative;
+      width: 100%;
+      min-height: 480px;
+      display: flex;
+      align-items: center;
+      padding: 60px 8%;
+      background-size: cover;
+      background-position: center;
+      border-top: 1px solid rgba(201, 168, 76, 0.15);
+      border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+      margin: 60px 0;
+    }
+
+    .featured-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(8, 8, 10, 0.95) 0%, rgba(8, 8, 10, 0.7) 50%, rgba(8, 8, 10, 0.2) 100%);
+      z-index: 1;
+    }
+
+    .featured-content {
+      max-width: 550px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .featured-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--gold);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .featured-title {
+      font-size: clamp(32px, 5vw, 48px);
+      font-style: italic;
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+
+    .featured-desc {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .featured-btn {
+      background: var(--gold);
+      color: var(--black);
+      border: 1px solid var(--gold);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 30px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-block;
+      text-decoration: none;
+    }
+
+    .featured-btn:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      box-shadow: 0 4px 15px rgba(201, 168, 76, 0.4);
+    }
+
+    /* Product Detail Page */
+    .product-detail-page {
+      padding: 140px 6% 80px 6%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .back-btn-container {
+      margin-bottom: 30px;
+    }
+
+    .back-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+      padding: 4px 0;
+    }
+
+    .back-btn:hover {
+      color: var(--gold);
+      transform: translateX(-4px);
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+    }
+
+    @media (max-width: 768px) {
+      .product-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    .product-image-container {
+      background: var(--card);
+      border: 1px solid rgba(240, 237, 232, 0.05);
+      border-radius: 20px;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .product-large-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 15px 40px rgba(0, 0, 0, 0.5));
+    }
+
+    .product-info-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .product-brand {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--gold);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .product-name {
+      font-size: clamp(32px, 5vw, 52px);
+      font-style: italic;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .product-price {
+      font-size: clamp(30px, 4vw, 38px);
+      color: var(--gold);
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .product-desc {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 35px;
+    }
+
+    .spec-row {
+      border-bottom: 1px solid rgba(240, 237, 232, 0.08);
+    }
+
+    .spec-label {
+      padding: 12px 0;
+      font-size: 13px;
+      color: var(--muted);
+      width: 40%;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .spec-value {
+      padding: 12px 0;
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .product-actions {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .qty-selector {
+      display: flex;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid rgba(240, 237, 232, 0.1);
+      border-radius: 9999px;
+      overflow: hidden;
+      height: 50px;
+    }
+
+    .qty-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      width: 45px;
+      height: 100%;
+      font-size: 18px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qty-btn:hover {
+      background: rgba(201, 168, 76, 0.1);
+      color: var(--gold);
+    }
+
+    .qty-num {
+      font-size: 15px;
+      font-weight: 600;
+      width: 40px;
+      text-align: center;
+    }
+
+    .add-to-cart-full {
+      flex-grow: 1;
+      background: var(--gold);
+      color: var(--black);
+      border: 1px solid var(--gold);
+      font-size: 15px;
+      font-weight: 600;
+      height: 50px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .add-to-cart-full:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      box-shadow: 0 4px 15px rgba(201, 168, 76, 0.4);
+    }
+
+    .view-cart-ghost {
+      display: block;
+      width: 100%;
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid rgba(201, 168, 76, 0.3);
+      font-size: 14px;
+      font-weight: 600;
+      height: 50px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      line-height: 48px;
+      text-decoration: none;
+    }
+
+    .view-cart-ghost:hover {
+      border-color: var(--gold);
+      background: rgba(201, 168, 76, 0.05);
+    }
+
+    /* Cart Page */
+    .cart-page {
+      padding: 140px 6% 80px 6%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .cart-title-h2 {
+      font-size: 38px;
+      font-style: italic;
+      margin-bottom: 40px;
+      border-bottom: 1px solid rgba(240, 237, 232, 0.08);
+      padding-bottom: 16px;
+    }
+
+    .cart-grid-container {
+      display: grid;
+      grid-template-columns: 1.8fr 1.2fr;
+      gap: 50px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .cart-grid-container {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    .cart-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .cart-item-row {
+      display: flex;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid rgba(240, 237, 232, 0.05);
+      border-radius: 16px;
+      padding: 16px;
+      gap: 20px;
+      position: relative;
+    }
+
+    @media (max-width: 580px) {
+      .cart-item-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    .cart-item-thumb {
+      width: 90px;
+      height: 90px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(8, 8, 10, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .cart-item-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cart-item-info {
+      flex-grow: 1;
+    }
+
+    .cart-item-brand {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .cart-item-name {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .cart-item-qty-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cart-qty-inline {
+      display: flex;
+      align-items: center;
+      background: #18181c;
+      border: 1px solid rgba(240, 237, 232, 0.08);
+      border-radius: 9999px;
+      height: 36px;
+    }
+
+    .cart-qty-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      width: 30px;
+      height: 100%;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .cart-qty-btn:hover {
+      color: var(--gold);
+    }
+
+    .cart-qty-num {
+      width: 25px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .cart-item-price {
+      font-size: 16px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .cart-item-remove {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      transition: var(--transition);
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cart-item-remove:hover {
+      color: #ff4d4d;
+    }
+
+    /* Summary Box */
+    .summary-box {
+      background: var(--card);
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      border-radius: 20px;
+      padding: 30px;
+      position: sticky;
+      top: 110px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .summary-title {
+      font-size: 22px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(240, 237, 232, 0.08);
+      padding-bottom: 12px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .summary-row.total-row {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      border-top: 1px solid rgba(240, 237, 232, 0.08);
+      padding-top: 16px;
+      margin-top: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-row.total-row .total-price {
+      color: var(--gold);
+    }
+
+    .summary-btn-primary {
+      width: 100%;
+      background: var(--gold);
+      color: var(--black);
+      border: 1px solid var(--gold);
+      font-size: 15px;
+      font-weight: 600;
+      height: 50px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .summary-btn-primary:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      box-shadow: 0 4px 15px rgba(201, 168, 76, 0.4);
+    }
+
+    .summary-btn-secondary {
+      width: 100%;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(240, 237, 232, 0.2);
+      font-size: 14px;
+      font-weight: 600;
+      height: 50px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 12px;
+      text-decoration: none;
+    }
+
+    .summary-btn-secondary:hover {
+      border-color: var(--gold);
+      background: rgba(201, 168, 76, 0.05);
+      color: var(--gold);
+    }
+
+    .cart-empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .cart-empty-icon {
+      color: var(--gold);
+      margin-bottom: 20px;
+      opacity: 0.7;
+    }
+
+    .cart-empty-msg {
+      font-size: 18px;
+      color: var(--muted);
+      margin-bottom: 30px;
+    }
+
+    /* Checkout Page */
+    .checkout-page {
+      padding: 140px 6% 80px 6%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1.2fr;
+      gap: 50px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .checkout-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    .checkout-section-card {
+      background: var(--card);
+      border: 1px solid rgba(240, 237, 232, 0.05);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 24px;
+    }
+
+    .checkout-section-title {
+      font-size: 20px;
+      font-style: italic;
+      margin-bottom: 20px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(240, 237, 232, 0.08);
+      padding-bottom: 10px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 16px;
+    }
+
+    .form-group.last-of-row {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-input, .form-select {
+      background: #18181c;
+      border: 1px solid rgba(240, 237, 232, 0.1);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      transition: var(--transition);
+      outline: none;
+    }
+
+    .form-input::placeholder {
+      color: rgba(240, 237, 232, 0.25);
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 10px rgba(201, 168, 76, 0.15);
+      background: #1e1e24;
+    }
+
+    /* Form validation error styling */
+    .error-msg {
+      color: #ff4d4d;
+      font-size: 11px;
+      margin-top: 6px;
+      display: none;
+      animation: fadeIn 0.2s ease;
+      text-transform: none;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    .form-input.invalid, .form-select.invalid {
+      border-color: #ff4d4d !important;
+      box-shadow: 0 0 10px rgba(255, 77, 77, 0.15) !important;
+    }
+
+    /* Payment Method Tabs & Panels */
+    .payment-methods-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(240, 237, 232, 0.08);
+      padding-bottom: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .payment-methods-tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .payment-method-tab {
+      background: #18181c;
+      border: 1px solid rgba(240, 237, 232, 0.08);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+      text-align: center;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .payment-method-tab:hover {
+      border-color: rgba(201, 168, 76, 0.3);
+      color: var(--text);
+      background: #1e1e24;
+    }
+
+    .payment-method-tab.active {
+      background: rgba(201, 168, 76, 0.15);
+      border-color: var(--gold);
+      color: var(--gold-light);
+      font-weight: 500;
+    }
+
+    .payment-method-tab svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .payment-tab-panel {
+      display: none;
+    }
+
+    .payment-tab-panel.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Card Brands Selector */
+    .card-brands-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .card-brand-badge {
+      background: #18181c;
+      border: 1px solid rgba(240, 237, 232, 0.08);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-brand-badge:hover {
+      border-color: rgba(201, 168, 76, 0.3);
+      color: var(--text);
+    }
+
+    .card-brand-badge.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--black);
+    }
+
+    /* PayPal & Apple Pay Sub-containers */
+    .paypal-inner, .applepay-inner {
+      background: rgba(24, 24, 28, 0.5);
+      border: 1px dashed rgba(240, 237, 232, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .paypal-btn {
+      background: #ffc439;
+      color: #003087;
+      font-weight: 700;
+      border-radius: 30px;
+      padding: 12px 32px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      transition: var(--transition);
+      box-shadow: 0 4px 12px rgba(255, 196, 57, 0.2);
+    }
+
+    .paypal-btn:hover {
+      background: #f2b522;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 196, 57, 0.3);
+    }
+
+    .applepay-btn {
+      background: #ffffff;
+      color: #000000;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 14px 32px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      width: 100%;
+      max-width: 280px;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .applepay-btn:hover {
+      background: #e5e5e5;
+      transform: translateY(-2px);
+    }
+
+    /* Swiss Private Bank wire details */
+    .wire-details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      background: rgba(24, 24, 28, 0.5);
+      border: 1px solid rgba(240, 237, 232, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 640px) {
+      .wire-details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .wire-detail-item h4 {
+      color: var(--gold);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .wire-detail-item p {
+      font-family: monospace;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Success Page */
+    .success-page {
+      padding: 160px 6% 100px 6%;
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .success-icon-wrapper {
+      width: 90px;
+      height: 90px;
+      background: rgba(201, 168, 76, 0.1);
+      border: 2px solid var(--gold);
+      color: var(--gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 30px auto;
+      box-shadow: 0 0 25px rgba(201, 168, 76, 0.2);
+    }
+
+    .success-title {
+      font-size: 48px;
+      font-style: italic;
+      margin-bottom: 16px;
+    }
+
+    .success-msg {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .order-receipt-card {
+      background: var(--card);
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: left;
+      margin-bottom: 40px;
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(240,237,232,0.05);
+      padding: 12px 0;
+      font-size: 14px;
+    }
+
+    .receipt-row:last-child {
+      border: none;
+      padding-bottom: 0;
+    }
+
+    /* About Page */
+    .about-page {
+      padding: 0 0 80px 0;
+    }
+
+    .about-hero {
+      position: relative;
+      height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-size: cover;
+      background-position: center;
+      border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+    }
+
+    .about-hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(8,8,10,0.6) 0%, rgba(8,8,10,1) 100%);
+      z-index: 1;
+    }
+
+    .about-hero-title {
+      font-size: 56px;
+      font-style: italic;
+      z-index: 2;
+      text-align: center;
+      letter-spacing: -1px;
+    }
+
+    .about-content-section {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 0 6%;
+    }
+
+    .about-p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 24px;
+      text-align: justify;
+    }
+
+    .about-values-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      max-width: 1000px;
+      margin: 60px auto 0 auto;
+      padding: 0 6%;
+    }
+
+    @media (max-width: 768px) {
+      .about-values-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+    }
+
+    .value-card {
+      background: var(--card);
+      border: 1px solid rgba(240, 237, 232, 0.05);
+      border-radius: 20px;
+      padding: 35px 24px;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .value-card:hover {
+      border-color: rgba(201, 168, 76, 0.3);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(201, 168, 76, 0.05);
+    }
+
+    .value-icon {
+      color: var(--gold);
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .value-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .value-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Contact Page */
+    .contact-page {
+      padding: 140px 6% 80px 6%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .contact-title {
+      font-size: 38px;
+      font-style: italic;
+      margin-bottom: 30px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 60px;
+    }
+
+    @media (max-width: 768px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    .contact-card-left {
+      background: var(--card);
+      border: 1px solid rgba(240, 237, 232, 0.05);
+      border-radius: 20px;
+      padding: 35px;
+    }
+
+    .contact-info-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      justify-content: center;
+    }
+
+    .contact-info-block {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .contact-info-icon {
+      color: var(--gold);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .contact-info-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .contact-info-val {
+      font-size: 16px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* Policy Page */
+    .policy-page {
+      padding: 140px 6% 80px 6%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .policy-title {
+      font-size: 42px;
+      font-style: italic;
+      margin-bottom: 30px;
+      border-bottom: 1px solid rgba(240, 237, 232, 0.08);
+      padding-bottom: 16px;
+    }
+
+    .policy-content {
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .policy-content p, .policy-content ul {
+      margin-bottom: 24px;
+    }
+
+    .policy-content h3 {
+      font-size: 20px;
+      color: var(--gold);
+      margin-top: 30px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--dark);
+      border-top: 1px solid rgba(201, 168, 76, 0.1);
+      padding: 80px 6% 40px 6%;
+      margin-top: auto;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto 50px auto;
+    }
+
+    @media (max-width: 768px) {
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .footer-logo-desc h2 {
+      font-family: var(--font-serif);
+      font-size: 24px;
+      font-style: italic;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 16px;
+      letter-spacing: 2px;
+    }
+
+    .footer-logo-desc p {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .footer-col h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold);
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-link {
+      font-size: 13.5px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .footer-link:hover {
+      color: var(--gold);
+      transform: translateX(4px);
+      display: inline-block;
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 0 auto;
+      border-top: 1px solid rgba(240, 237, 232, 0.05);
+      padding-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      .footer-bottom {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 30px;
+      right: -400px;
+      background: var(--card);
+      border-left: 4px solid var(--gold);
+      border-top: 1px solid rgba(201, 168, 76, 0.15);
+      border-right: 1px solid rgba(201, 168, 76, 0.15);
+      border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+      padding: 16px 24px;
+      border-radius: 8px;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 350px;
+    }
+
+    .toast-container.show {
+      right: 30px;
+    }
+
+    .toast-icon {
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+    }
+
+    .toast-message {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Scroll Progress Bar */
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      z-index: 10001;
+      width: 0%;
+      transition: width 0.05s linear;
+      box-shadow: 0 0 10px rgba(232, 192, 96, 0.4);
+    }
+
+    /* Scroll-To-Top Button */
+    .scroll-to-top {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      width: 48px;
+      height: 48px;
+      background: var(--dark);
+      border: 1.5px solid rgba(201, 168, 76, 0.25);
+      border-radius: 50%;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .scroll-to-top.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .scroll-to-top:hover {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--black);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(201, 168, 76, 0.25);
+    }
+
+    .scroll-to-top svg {
+      width: 20px;
+      height: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .scroll-to-top:hover svg {
+      transform: translateY(-2px);
+    }
+
+    /* Scroll Reveal Animation Styles */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Stagger transitions for elements */
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* Video controls removal styles */
+    #hero-section {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .hero-scroll-container {
+      height: 100vh;
+    }
+
+    video {
+      pointer-events: none !important;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+
+    video::-webkit-media-controls,
+    video::-webkit-media-controls-enclosure,
+    video::-webkit-media-controls-panel,
+    video::-webkit-media-controls-play-button,
+    video::-webkit-media-controls-timeline {
+      display: none !important;
+      -webkit-appearance: none;
+    }
+
+    @keyframes blurRise {
+      from { opacity: 0; transform: translateY(28px); filter: blur(12px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes floatInRight {
+      from { opacity: 0; transform: translate(60px, 0); }
+      to { opacity: 1; transform: translate(0, 0); }
+    }
+    @keyframes scrollLinePulse {
+      0% { transform: scaleY(0); transform-origin: top; opacity: 0; }
+      50% { transform: scaleY(1); transform-origin: top; opacity: 1; }
+      51% { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+      100% { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+    }
+
+    .animate-eyebrow {
+      animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.2s;
+      opacity: 0;
+    }
+    .animate-h1-line1 {
+      animation: blurRise 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.35s;
+      opacity: 0;
+    }
+    .animate-h1-line2 {
+      animation: blurRise 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.5s;
+      opacity: 0;
+    }
+    .animate-paragraph {
+      animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.7s;
+      opacity: 0;
+    }
+    .animate-buttons {
+      animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.9s;
+      opacity: 0;
+    }
+    .animate-watch {
+      animation: floatInRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.5s;
+      opacity: 0;
+    }
+
+    /* Scroll animations styles */
+    .scroll-hidden {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), 
+                  transform 0.7s cubic-bezier(0.16,1,0.3,1);
+    }
+    .scroll-hidden.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .watch-card:nth-child(2) { transition-delay: 0.1s; }
+    .watch-card:nth-child(3) { transition-delay: 0.2s; }
+    .watch-card:nth-child(4) { transition-delay: 0.3s; }
+    .watch-card:nth-child(5) { transition-delay: 0.4s; }
+    .stat:nth-child(2) { transition-delay: 0.1s; }
+    .stat:nth-child(3) { transition-delay: 0.2s; }
+    .stat:nth-child(4) { transition-delay: 0.3s; }
+
+    /* Mobile Navigation & Layout Responsiveness */
+    #mobile-menu-toggle {
+      display: none;
+    }
+    #mobile-menu-drawer {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: rgba(8, 8, 10, 0.98);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 2000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 40px;
+      opacity: 0;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (max-width: 768px) {
+      #main-nav {
+        padding: 12px 16px !important;
+      }
+      #nav-logo-text {
+        font-size: 22px !important;
+        letter-spacing: 2px !important;
+      }
+      #nav-center-pills {
+        display: none !important;
+      }
+      #nav-shop-now-btn {
+        display: none !important;
+      }
+      #nav-cart-btn {
+        padding: 6px 14px !important;
+        font-size: 12px !important;
+      }
+      #mobile-menu-toggle {
+        display: flex !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Scroll Progress Bar -->
+  <div id="scroll-progress-bar" class="scroll-progress"></div>
+
+  <!-- Scroll To Top Button -->
+  <button id="scroll-to-top-btn" class="scroll-to-top" onclick="scrollToTop()" aria-label="Scroll to top">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-up"><path d="m18 15-6-6-6 6"/></svg>
+  </button>
+
+  <!-- Navigation fixed top -->
+  <nav id="main-nav" style="
+    position:fixed;
+    top:0;left:0;right:0;
+    z-index:1000;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 48px;
+    transition:background 0.3s;">
+    
+    <!-- Logo -->
+    <div id="nav-logo-text" style="
+      font-family:'Playfair Display',serif;
+      font-style:italic;
+      font-size:28px;
+      color:#c9a84c;
+      letter-spacing:3px;
+      cursor:pointer;"
+      onclick="showPage('home')">ROLEX</div>
+
+    <!-- Center Pills -->
+    <div id="nav-center-pills" style="
+      display:flex;
+      gap:2px;
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:50px;
+      padding:5px;">
+      <button id="nav-btn-home" onclick="showPage('home')" style="
+        padding:8px 22px;
+        border-radius:50px;
+        font-size:13px;
+        background:#c9a84c;
+        color:#000;
+        font-weight:600;
+        border:none;
+        cursor:pointer;">Home</button>
+      <button id="nav-btn-collection" onclick="showPage('collection')" style="
+        padding:8px 22px;
+        border-radius:50px;
+        font-size:13px;
+        color:rgba(255,255,255,0.7);
+        background:none;
+        border:none;
+        cursor:pointer;">Collection</button>
+      <button id="nav-btn-about" onclick="showPage('about')" style="
+        padding:8px 22px;
+        border-radius:50px;
+        font-size:13px;
+        color:rgba(255,255,255,0.7);
+        background:none;
+        border:none;
+        cursor:pointer;">About</button>
+      <button id="nav-btn-contact" onclick="showPage('contact')" style="
+        padding:8px 22px;
+        border-radius:50px;
+        font-size:13px;
+        color:rgba(255,255,255,0.7);
+        background:none;
+        border:none;
+        cursor:pointer;">Contact</button>
+    </div>
+
+    <!-- Right Side -->
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="nav-cart-btn" onclick="showPage('cart')" style="
+        position:relative;
+        background:none;
+        border:1px solid rgba(255,255,255,0.2);
+        color:#fff;
+        padding:9px 20px;
+        border-radius:50px;
+        font-size:13px;
+        cursor:pointer;">
+        🛒 Cart
+        <span id="cartCount" style="
+          position:absolute;
+          top:-6px;right:-6px;
+          background:#c9a84c;
+          color:#000;
+          width:18px;height:18px;
+          border-radius:50%;
+          font-size:10px;
+          font-weight:700;
+          display:flex;
+          align-items:center;
+          justify-content:center;">0</span>
+      </button>
+      <button id="nav-shop-now-btn" onclick="showPage('collection')" style="
+        background:#c9a84c;
+        color:#000;
+        padding:10px 26px;
+        border-radius:50px;
+        font-size:13px;
+        font-weight:700;
+        border:none;
+        cursor:pointer;">Shop Now</button>
+      
+      <!-- Mobile Menu Button -->
+      <button id="mobile-menu-toggle" onclick="toggleMobileMenu()" style="
+        background:none;
+        border:1px solid rgba(255,255,255,0.2);
+        color:#fff;
+        padding:9px 16px;
+        border-radius:50px;
+        font-size:13px;
+        align-items:center;
+        gap:6px;
+        cursor:pointer;">
+        <span style="font-size:14px;">☰</span> Menu
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu Drawer Overlay -->
+  <div id="mobile-menu-drawer">
+    <!-- Close Button -->
+    <button onclick="toggleMobileMenu()" style="
+      position:absolute;
+      top:24px;right:24px;
+      background:none;
+      border:1px solid rgba(255,255,255,0.2);
+      color:#fff;
+      padding:8px 16px;
+      border-radius:50px;
+      font-size:13px;
+      cursor:pointer;
+      font-family:'Inter',sans-serif;">
+      ✕ Close
+    </button>
+
+    <!-- Drawer Logo -->
+    <div style="
+      font-family:'Playfair Display',serif;
+      font-style:italic;
+      font-size:32px;
+      color:#c9a84c;
+      letter-spacing:4px;
+      margin-bottom:20px;">ROLEX</div>
+
+    <!-- Drawer Links -->
+    <div style="
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:24px;
+      width:100%;">
+      <button onclick="handleMobileNav('home')" style="
+        background:none;
+        border:none;
+        color:#fff;
+        font-family:'Playfair Display',serif;
+        font-style:italic;
+        font-size:24px;
+        cursor:pointer;
+        transition:color 0.3s;">Home</button>
+      <button onclick="handleMobileNav('collection')" style="
+        background:none;
+        border:none;
+        color:#fff;
+        font-family:'Playfair Display',serif;
+        font-style:italic;
+        font-size:24px;
+        cursor:pointer;
+        transition:color 0.3s;">Collection</button>
+      <button onclick="handleMobileNav('about')" style="
+        background:none;
+        border:none;
+        color:#fff;
+        font-family:'Playfair Display',serif;
+        font-style:italic;
+        font-size:24px;
+        cursor:pointer;
+        transition:color 0.3s;">About</button>
+      <button onclick="handleMobileNav('contact')" style="
+        background:none;
+        border:none;
+        color:#fff;
+        font-family:'Playfair Display',serif;
+        font-style:italic;
+        font-size:24px;
+        cursor:pointer;
+        transition:color 0.3s;">Contact</button>
+    </div>
+
+    <!-- Shop Now in Drawer -->
+    <button onclick="handleMobileNav('collection')" style="
+      background:#c9a84c;
+      color:#000;
+      padding:14px 40px;
+      border-radius:50px;
+      font-size:15px;
+      font-weight:700;
+      border:none;
+      cursor:pointer;
+      margin-top:20px;
+      font-family:'Inter',sans-serif;">Shop Collection</button>
+  </div>
+
+  <!-- 1. Home Page -->
+  <div id="page-home" class="page active">
+    <!-- Hero Section -->
+    <div class="hero-scroll-container">
+      <div id="hero-section" class="hero-container" style="position: relative; height: 100vh; overflow: hidden;">
+        <!-- Video Container -->
+        <div class="hero-video-container" style="position:absolute; inset:0; width:100%; height:100%; z-index:1;">
+          <video 
+            id="hero-video" 
+            autoplay
+            muted 
+            loop
+            playsinline 
+            preload="auto"
+            style="position:absolute;
+                   inset:0;
+                   width:100%;
+                   height:100%;
+                   object-fit:cover;
+                   z-index:1;
+                   pointer-events:none;">
+            <source 
+              src="https://res.cloudinary.com/vpliervv/video/upload/video.mp4_hzks9i.mp4" 
+              type="video/mp4"/>
+          </video>
+        </div>
+
+        <!-- Hero Dark Gradient Overlay -->
+        <div class="hero-overlay"></div>
+
+        <!-- Hero Premium Content -->
+        <div class="hero-content">
+          <div class="hero-left">
+            <span class="hero-eyebrow">The Pinnacle of Swiss Craftsmanship</span>
+            <h1 class="hero-title">Time is Perfected</h1>
+            <p class="hero-desc">Experience the unmatched precision, iconic elegance, and robust performance of Rolex. Engineered for those who appreciate the true art of horology.</p>
+            <div class="hero-actions">
+              <button class="hero-btn-filled" onclick="handleCollectionClick()">Explore Collection</button>
+              <button class="hero-btn-ghost" onclick="showPage('about')">Our Heritage</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scroll down indicator -->
+        <div class="hero-scroll-hint" onclick="handleCollectionClick()">
+          <span>Scroll down</span>
+          <div class="scroll-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar reveal">
+      <div class="stat-item">
+        <h3>120+</h3>
+        <p>Years of Craft</p>
+      </div>
+      <div class="stat-item">
+        <h3>50+</h3>
+        <p>Watch Models</p>
+      </div>
+      <div class="stat-item">
+        <h3>180</h3>
+        <p>Countries Served</p>
+      </div>
+      <div class="stat-item">
+        <h3>100%</h3>
+        <p>Swiss Made</p>
+      </div>
+    </div>
+
+    <!-- Collection Section -->
+    <div class="collection-section" id="collection">
+      <div class="collection-header reveal">
+        <h2>The Curated Collection</h2>
+        <p>Select timepieces crafted in Geneva, combining historic excellence with architectural mechanical design.</p>
+      </div>
+
+      <div class="grid-collection" id="home-collection-grid">
+        <!-- Watch cards injected dynamically by JavaScript to enable dynamic clicking/navigation -->
+      </div>
+    </div>
+
+    <!-- Featured Banner -->
+    <div class="featured-banner" id="featured-banner-bg">
+      <div class="featured-overlay"></div>
+      <div class="featured-content reveal">
+        <div class="featured-label">Featured Timepiece</div>
+        <h2 class="featured-title">Rolex Submariner</h2>
+        <p class="featured-desc">The ultimate reference among divers' watches, presenting a high-contrast black dial, Cerachrom bezel insert, and a solid oystersteel bracelet built to withstand the deepest currents.</p>
+        <button class="featured-btn" onclick="viewProduct(0)">Discover More</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collection Page -->
+  <div id="page-collection" class="page">
+    <div class="collection-page" style="padding: 140px 6% 80px 6%; max-width: 1200px; margin: 0 auto;">
+      <h2 class="cart-title-h2" style="margin-bottom: 30px; text-align: center; font-family: 'Playfair Display', serif; font-style: italic; color: var(--gold);">The Curated Collection</h2>
+      <div class="grid-collection" id="collection-grid">
+        <!-- Watch cards injected dynamically by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Product Detail Page -->
+  <div id="page-product-detail" class="page">
+    <div class="product-detail-page">
+      <div class="back-btn-container">
+        <button class="back-btn" onclick="showPage('home')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          Back to Catalog
+        </button>
+      </div>
+
+      <div class="product-grid" id="product-detail-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Cart Page -->
+  <div id="page-cart" class="page">
+    <div class="cart-page">
+      <h2 class="cart-title-h2">Your Shopping Cart</h2>
+      
+      <div id="cart-content-wrapper">
+        <!-- Rendered dynamically: Split into list and summary, or empty state -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Checkout Page -->
+  <div id="page-checkout" class="page">
+    <div class="checkout-page">
+      <h2 class="cart-title-h2" style="margin-bottom: 30px;">Complete Your Acquisition</h2>
+      
+      <div class="checkout-grid">
+        <!-- Form Left -->
+        <form id="checkout-form" onsubmit="handlePlaceOrder(event)">
+          <!-- Section 1 -->
+          <div class="checkout-section-card">
+            <div class="checkout-section-title">
+              1. Contact Information
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="chk-first">First Name</label>
+                <input class="form-input" id="chk-first" type="text" placeholder="John" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="chk-last">Last Name</label>
+                <input class="form-input" id="chk-last" type="text" placeholder="Doe" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="chk-email">Email Address</label>
+                <input class="form-input" id="chk-email" type="email" placeholder="john.doe@example.com" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="chk-phone">Phone Number</label>
+                <input class="form-input" id="chk-phone" type="tel" placeholder="+1 (555) 019-2834" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2 -->
+          <div class="checkout-section-card">
+            <div class="checkout-section-title">
+              2. Shipping Address (Fully Insured courier)
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="chk-street">Street Address</label>
+              <input class="form-input" id="chk-street" type="text" placeholder="721 Fifth Avenue, Penthouse B" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="chk-city">City</label>
+                <input class="form-input" id="chk-city" type="text" placeholder="New York" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="chk-zip">Postal Code / Zip</label>
+                <input class="form-input" id="chk-zip" type="text" placeholder="10022" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="chk-country">Country</label>
+              <select class="form-select" id="chk-country" required>
+                <option value="">Select Country...</option>
+                <option value="AF">Afghanistan</option>
+                <option value="AL">Albania</option>
+                <option value="DZ">Algeria</option>
+                <option value="AD">Andorra</option>
+                <option value="AO">Angola</option>
+                <option value="AG">Antigua and Barbuda</option>
+                <option value="AR">Argentina</option>
+                <option value="AM">Armenia</option>
+                <option value="AU">Australia</option>
+                <option value="AT">Austria</option>
+                <option value="AZ">Azerbaijan</option>
+                <option value="BS">Bahamas</option>
+                <option value="BH">Bahrain</option>
+                <option value="BD">Bangladesh</option>
+                <option value="BB">Barbados</option>
+                <option value="BY">Belarus</option>
+                <option value="BE">Belgium</option>
+                <option value="BZ">Belize</option>
+                <option value="BJ">Benin</option>
+                <option value="BT">Bhutan</option>
+                <option value="BO">Bolivia</option>
+                <option value="BA">Bosnia and Herzegovina</option>
+                <option value="BW">Botswana</option>
+                <option value="BR">Brazil</option>
+                <option value="BN">Brunei</option>
+                <option value="BG">Bulgaria</option>
+                <option value="BF">Burkina Faso</option>
+                <option value="BI">Burundi</option>
+                <option value="CV">Cabo Verde</option>
+                <option value="KH">Cambodia</option>
+                <option value="CM">Cameroon</option>
+                <option value="CA">Canada</option>
+                <option value="CF">Central African Republic</option>
+                <option value="TD">Chad</option>
+                <option value="CL">Chile</option>
+                <option value="CN">China</option>
+                <option value="CO">Colombia</option>
+                <option value="KM">Comoros</option>
+                <option value="CG">Congo</option>
+                <option value="CR">Costa Rica</option>
+                <option value="HR">Croatia</option>
+                <option value="CU">Cuba</option>
+                <option value="CY">Cyprus</option>
+                <option value="CZ">Czech Republic</option>
+                <option value="DK">Denmark</option>
+                <option value="DJ">Djibouti</option>
+                <option value="DM">Dominica</option>
+                <option value="DO">Dominican Republic</option>
+                <option value="EC">Ecuador</option>
+                <option value="EG">Egypt</option>
+                <option value="SV">El Salvador</option>
+                <option value="GQ">Equatorial Guinea</option>
+                <option value="ER">Eritrea</option>
+                <option value="EE">Estonia</option>
+                <option value="SZ">Eswatini</option>
+                <option value="ET">Ethiopia</option>
+                <option value="FJ">Fiji</option>
+                <option value="FI">Finland</option>
+                <option value="FR">France</option>
+                <option value="GA">Gabon</option>
+                <option value="GM">Gambia</option>
+                <option value="GE">Georgia</option>
+                <option value="DE">Germany</option>
+                <option value="GH">Ghana</option>
+                <option value="GR">Greece</option>
+                <option value="GD">Grenada</option>
+                <option value="GT">Guatemala</option>
+                <option value="GN">Guinea</option>
+                <option value="GW">Guinea-Bissau</option>
+                <option value="GY">Guyana</option>
+                <option value="HT">Haiti</option>
+                <option value="HN">Honduras</option>
+                <option value="HU">Hungary</option>
+                <option value="IS">Iceland</option>
+                <option value="IN">India</option>
+                <option value="ID">Indonesia</option>
+                <option value="IR">Iran</option>
+                <option value="IQ">Iraq</option>
+                <option value="IE">Ireland</option>
+                <option value="IL">Israel</option>
+                <option value="IT">Italy</option>
+                <option value="JM">Jamaica</option>
+                <option value="JP">Japan</option>
+                <option value="JO">Jordan</option>
+                <option value="KZ">Kazakhstan</option>
+                <option value="KE">Kenya</option>
+                <option value="KI">Kiribati</option>
+                <option value="KP">Korea (North)</option>
+                <option value="KR">Korea (South)</option>
+                <option value="KW">Kuwait</option>
+                <option value="KG">Kyrgyzstan</option>
+                <option value="LA">Laos</option>
+                <option value="LV">Latvia</option>
+                <option value="LB">Lebanon</option>
+                <option value="LS">Lesotho</option>
+                <option value="LR">Liberia</option>
+                <option value="LY">Libya</option>
+                <option value="LI">Liechtenstein</option>
+                <option value="LT">Lithuania</option>
+                <option value="LU">Luxembourg</option>
+                <option value="MG">Madagascar</option>
+                <option value="MW">Malawi</option>
+                <option value="MY">Malaysia</option>
+                <option value="MV">Maldives</option>
+                <option value="ML">Mali</option>
+                <option value="MT">Malta</option>
+                <option value="MH">Marshall Islands</option>
+                <option value="MR">Mauritania</option>
+                <option value="MU">Mauritius</option>
+                <option value="MX">Mexico</option>
+                <option value="FM">Micronesia</option>
+                <option value="MD">Moldova</option>
+                <option value="MC">Monaco</option>
+                <option value="MN">Mongolia</option>
+                <option value="ME">Montenegro</option>
+                <option value="MA">Morocco</option>
+                <option value="MZ">Mozambique</option>
+                <option value="MM">Myanmar</option>
+                <option value="NA">Namibia</option>
+                <option value="NR">Nauru</option>
+                <option value="NP">Nepal</option>
+                <option value="NL">Netherlands</option>
+                <option value="NZ">New Zealand</option>
+                <option value="NI">Nicaragua</option>
+                <option value="NE">Niger</option>
+                <option value="NG">Nigeria</option>
+                <option value="MK">North Macedonia</option>
+                <option value="NO">Norway</option>
+                <option value="OM">Oman</option>
+                <option value="PK">Pakistan</option>
+                <option value="PW">Palau</option>
+                <option value="PA">Panama</option>
+                <option value="PG">Papua New Guinea</option>
+                <option value="PY">Paraguay</option>
+                <option value="PE">Peru</option>
+                <option value="PH">Philippines</option>
+                <option value="PL">Poland</option>
+                <option value="PT">Portugal</option>
+                <option value="QA">Qatar</option>
+                <option value="RO">Romania</option>
+                <option value="RU">Russia</option>
+                <option value="RW">Rwanda</option>
+                <option value="KN">Saint Kitts and Nevis</option>
+                <option value="LC">Saint Lucia</option>
+                <option value="VC">Saint Vincent and the Grenadines</option>
+                <option value="WS">Samoa</option>
+                <option value="SM">San Marino</option>
+                <option value="ST">Sao Tome and Principe</option>
+                <option value="SA">Saudi Arabia</option>
+                <option value="SN">Senegal</option>
+                <option value="RS">Serbia</option>
+                <option value="SC">Seychelles</option>
+                <option value="SL">Sierra Leone</option>
+                <option value="SG">Singapore</option>
+                <option value="SK">Slovakia</option>
+                <option value="SI">Slovenia</option>
+                <option value="SB">Solomon Islands</option>
+                <option value="SO">Somalia</option>
+                <option value="ZA">South Africa</option>
+                <option value="ES">Spain</option>
+                <option value="LK">Sri Lanka</option>
+                <option value="SD">Sudan</option>
+                <option value="SR">Suriname</option>
+                <option value="SE">Sweden</option>
+                <option value="CH">Switzerland</option>
+                <option value="SY">Syria</option>
+                <option value="TW">Taiwan</option>
+                <option value="TJ">Tajikistan</option>
+                <option value="TZ">Tanzania</option>
+                <option value="TH">Thailand</option>
+                <option value="TL">Timor-Leste</option>
+                <option value="TG">Togo</option>
+                <option value="TO">Tonga</option>
+                <option value="TT">Trinidad and Tobago</option>
+                <option value="TN">Tunisia</option>
+                <option value="TR">Turkey</option>
+                <option value="TM">Turkmenistan</option>
+                <option value="TV">Tuvalu</option>
+                <option value="UG">Uganda</option>
+                <option value="UA">Ukraine</option>
+                <option value="AE">United Arab Emirates</option>
+                <option value="GB">United Kingdom</option>
+                <option value="US">United States</option>
+                <option value="UY">Uruguay</option>
+                <option value="UZ">Uzbekistan</option>
+                <option value="VU">Vanuatu</option>
+                <option value="VE">Venezuela</option>
+                <option value="VN">Vietnam</option>
+                <option value="YE">Yemen</option>
+                <option value="ZM">Zambia</option>
+                <option value="ZW">Zimbabwe</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Section 3 -->
+          <div class="checkout-section-card">
+            <div class="checkout-section-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--gold); margin-right: 8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              3. Secure Vault Payment Details
+            </div>
+
+            <!-- Payment Method Tabs -->
+            <div class="payment-methods-tabs">
+              <div class="payment-method-tab active" id="pay-tab-card" onclick="switchPaymentMethod('card')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                <span>Cards</span>
+              </div>
+              <div class="payment-method-tab" id="pay-tab-paypal" onclick="switchPaymentMethod('paypal')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                <span>PayPal</span>
+              </div>
+              <div class="payment-method-tab" id="pay-tab-apple" onclick="switchPaymentMethod('apple')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.94c-1.34 0-2.62-.48-3.62-1.34-1.02-.87-1.63-2.09-1.63-3.41s.61-2.54 1.63-3.41c1-.86 2.28-1.34 3.62-1.34s2.62.48 3.62 1.34c1.02.87 1.63 2.09 1.63 3.41s-.61 2.54-1.63 3.41c-1 .86-2.28 1.34-3.62 1.34z"/><path d="M12 2v4"/></svg>
+                <span>Apple Pay</span>
+              </div>
+              <div class="payment-method-tab" id="pay-tab-wire" onclick="switchPaymentMethod('wire')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M6 18V9"/><path d="M10 18V9"/><path d="M14 18V9"/><path d="M18 18V9"/><path d="M12 2 2 7v2h20V7L12 2z"/></svg>
+                <span>Wire Info</span>
+              </div>
+            </div>
+
+            <!-- Panel 1: Credit Card -->
+            <div class="payment-tab-panel active" id="pay-panel-card">
+              <!-- Card Brand Selector -->
+              <div class="card-brands-selector" style="margin-bottom: 20px;">
+                <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-right: 8px;">Cards:</span>
+                <div class="card-brand-badge active" id="brand-visa" onclick="selectCardBrand('Visa')">
+                  <span>Visa</span>
+                </div>
+                <div class="card-brand-badge" id="brand-mastercard" onclick="selectCardBrand('Mastercard')">
+                  <span>Mastercard</span>
+                </div>
+                <div class="card-brand-badge" id="brand-amex" onclick="selectCardBrand('AMEX')">
+                  <span>AMEX</span>
+                </div>
+                <div class="card-brand-badge" id="brand-discover" onclick="selectCardBrand('Discover')">
+                  <span>Discover</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="chk-cardname">Name on Card</label>
+                <input class="form-input" id="chk-cardname" type="text" placeholder="JOHN DOE" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="chk-cardnum">Credit Card Number</label>
+                <input class="form-input" id="chk-cardnum" type="text" placeholder="4111 2222 3333 4444" minlength="16" maxlength="19" required oninput="detectCardBrand(this.value)">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="chk-expiry">Expiration Date</label>
+                  <input class="form-input" id="chk-expiry" type="text" placeholder="MM/YY" maxlength="5" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="chk-cvv">Security Code (CVV)</label>
+                  <input class="form-input" id="chk-cvv" type="password" placeholder="•••" maxlength="4" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel 2: PayPal -->
+            <div class="payment-tab-panel" id="pay-panel-paypal">
+              <div class="paypal-inner">
+                <div style="font-size: 22px; font-weight: 700; color: #003087; font-family: sans-serif; display: flex; align-items: center; gap: 4px; justify-content: center; background: rgba(255, 255, 255, 0.05); padding: 8px 24px; border-radius: 8px;">
+                  <span style="color: #003087; font-style: italic;">Pay</span><span style="color: #0079c1; font-style: italic;">Pal</span>
+                </div>
+                <p style="font-size: 13px; color: var(--muted); max-width: 380px;">Connect your PayPal wallet to pre-authorize your watch order securely.</p>
+                
+                <div id="paypal-auth-status" style="font-size: 13px; color: var(--gold-light); font-weight: 500; margin-top: 4px;">
+                  Status: <span id="paypal-status-text" style="color: #ff4d4d; font-weight: 600;">Account Not Connected</span>
+                </div>
+
+                <button type="button" class="paypal-btn" onclick="simulatePayPalAuth(event)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  <span id="paypal-btn-text">Link PayPal Account</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel 3: Apple Pay -->
+            <div class="payment-tab-panel" id="pay-panel-apple">
+              <div class="applepay-inner">
+                <div style="font-size: 20px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px 24px; border-radius: 8px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="fill: #fff; margin-right: 4px;"><path d="M12 20.94c-1.34 0-2.62-.48-3.62-1.34-1.02-.87-1.63-2.09-1.63-3.41s.61-2.54 1.63-3.41c1-.86 2.28-1.34 3.62-1.34s2.62.48 3.62 1.34c1.02.87 1.63 2.09 1.63 3.41s-.61 2.54-1.63 3.41c-1 .86-2.28 1.34-3.62 1.34z"/></svg>
+                  <span>Pay</span>
+                </div>
+                <p style="font-size: 13px; color: var(--muted); max-width: 380px;">Fast-track checkout using biometric pre-authorization with Apple Pay.</p>
+                
+                <div id="apple-auth-status" style="font-size: 13px; color: var(--gold-light); font-weight: 500; margin-top: 4px;">
+                  Status: <span id="apple-status-text" style="color: #ff4d4d; font-weight: 600;">Not Pre-authorized</span>
+                </div>
+
+                <button type="button" class="applepay-btn" id="applepay-btn-el" onclick="simulateApplePay(event)">
+                  Authenticate with Apple Pay
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel 4: Swiss Private Bank Wire -->
+            <div class="payment-tab-panel" id="pay-panel-wire">
+              <div style="margin-bottom: 16px;">
+                <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 12px;">For ultra-exclusive high-value acquisitions, bank wires can be processed directly to our Swiss private treasury.</p>
+              </div>
+              <div class="wire-details-grid">
+                <div class="wire-detail-item">
+                  <h4>Beneficiary Bank</h4>
+                  <p>Banque Privée de Genève, SA</p>
+                </div>
+                <div class="wire-detail-item">
+                  <h4>SWIFT / BIC Code</h4>
+                  <p>BPGNCH22XXX</p>
+                </div>
+                <div class="wire-detail-item">
+                  <h4>IBAN Number</h4>
+                  <p>CH93 0024 1004 9328 1204 9</p>
+                </div>
+                <div class="wire-detail-item">
+                  <h4>Reference Code</h4>
+                  <p style="color: var(--gold); font-weight: 600;" id="wire-reference-lbl">RLX-WIRE-TEMP</p>
+                </div>
+              </div>
+              <p style="font-size: 12px; color: var(--gold-light); margin-top: 14px; font-style: italic; text-align: center;">
+                ✔ Selected: We will prepare your Swiss banking wire instruction invoice.
+              </p>
+            </div>
+          </div>
+
+          <button type="submit" class="summary-btn-primary" style="height: 56px; font-size: 16px;">
+            Place Order & Wire Acquisition →
+          </button>
+        </form>
+
+        <!-- Summary Right -->
+        <div class="summary-box" id="checkout-summary-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Success Page -->
+  <div id="page-success" class="page">
+    <div class="success-page">
+      <div class="success-icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h2 class="success-title">Order Placed!</h2>
+      <p class="success-msg">Your transaction was completed successfully. A fully insured, armored courier dispatch team will contact you shortly to schedule delivery.</p>
+      
+      <div class="order-receipt-card" id="success-receipt-wrapper">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <button class="hero-btn-filled" onclick="clearCartAndGoHome()">
+        Continue Shopping
+      </button>
+    </div>
+  </div>
+
+  <!-- 6. About Page -->
+  <div id="page-about" class="page">
+    <div class="about-page">
+      <div class="about-hero" id="about-hero-banner">
+        <div class="about-hero-overlay"></div>
+        <h1 class="about-hero-title">Our Story</h1>
+      </div>
+
+      <div class="about-content-section">
+        <p class="about-p">Founded in 1905 by Hans Wilsdorf, Rolex has stood as the ultimate pioneer in swiss luxury watchmaking. Driven by a relentless quest for excellence, our mechanical ateliers in Geneva continue to perfect the horological arts, integrating micro-precision gears with premium materials such as 18-carat gold and high-grade oystersteel.</p>
+        <p class="about-p">Every timepiece represents months of rigorous assembly, hand polishing, and calibration inside state-of-the-art laboratory modules. Rolex watchmakers assemble complicated chronographs and perpetual motions capable of running reliably under extreme atmospheric pressure—from the deepest ocean ravines to the highest mountain summits.</p>
+        <p class="about-p">Choosing a luxury watch is more than acquiring a method of keeping time; it is secure investment in art, a marker of profound achievements, and a physical legacy of precision designed to endure across multiple generations.</p>
+      </div>
+
+      <div class="about-values-grid">
+        <div class="value-card">
+          <div class="value-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <h3 class="value-title">Micro Precision</h3>
+          <p class="value-desc">Each balance wheel and perpetual self-winding movement is calibrated to standard margins of less than two seconds deviation per day.</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-gem"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
+          </div>
+          <h3 class="value-title">Excellence</h3>
+          <p class="value-desc">Only the finest diamonds, platinum alloys, 18k rose gold, and deep forest-green dials earn a placement in our watches.</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-landmark"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><path d="m12 2-10 5h20z"/><path d="M2 11h20v2H2z"/><path d="M2 18h20v2H2z"/></svg>
+          </div>
+          <h3 class="value-title">Heritage</h3>
+          <p class="value-desc">Preserving classical Swiss engineering traditions while leading state-of-the-art material patents.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Contact Page -->
+  <div id="page-contact" class="page">
+    <div class="contact-page">
+      <h2 class="contact-title">Contact Our Concierge</h2>
+      
+      <div class="contact-grid">
+        <!-- Form Left -->
+        <div class="contact-card-left">
+          <form id="contact-form" class="contact-form" onsubmit="handleContactSubmit(event)">
+            <div class="form-group">
+              <label class="form-label" for="cnt-name">Your Full Name</label>
+              <input class="form-input" id="cnt-name" type="text" placeholder="Elizabeth Sterling" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cnt-email">Email Address</label>
+              <input class="form-input" id="cnt-email" type="email" placeholder="elizabeth@domain.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cnt-subject">Inquiry Subject</label>
+              <select class="form-select" id="cnt-subject" required>
+                <option value="Acquisition Assistance">Acquisition Assistance</option>
+                <option value="Bespoke Commission">Bespoke Commission</option>
+                <option value="Atelier Maintenance">Atelier Maintenance & Service</option>
+                <option value="Corporate Partnership">Corporate Partnership</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cnt-message">Inquiry / Message</label>
+              <textarea class="form-input" id="cnt-message" rows="5" placeholder="Please describe the timepiece references or service inquiries you wish to discuss..." style="resize: none;" oninput="document.getElementById('cnt-message-input').value = this.value" required></textarea>
+              <input type="hidden" id="cnt-message-input" class="form-input" value="">
+            </div>
+            <button type="submit" class="summary-btn-primary" style="height: 50px;">
+              Submit Secure Inquiry
+            </button>
+          </form>
+        </div>
+
+        <!-- Details Right -->
+        <div class="contact-info-panel">
+          <div class="contact-info-block">
+            <div class="contact-info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            </div>
+            <div>
+              <div class="contact-info-title">Secure Digital Correspondence</div>
+              <div class="contact-info-val">concierge@rolex-geneva.com</div>
+            </div>
+          </div>
+
+          <div class="contact-info-block">
+            <div class="contact-info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div>
+              <div class="contact-info-title">Global Telephone Line</div>
+              <div class="contact-info-val">+41 22 302 2200</div>
+            </div>
+          </div>
+
+          <div class="contact-info-block">
+            <div class="contact-info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <div class="contact-info-title">Atelier Hours</div>
+              <div class="contact-info-val">Mon — Fri: 09:00 - 18:00 CET<br>Saturday by Appointment Only</div>
+            </div>
+          </div>
+
+          <div class="contact-info-block">
+            <div class="contact-info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div>
+              <div class="contact-info-title">Primary Geneva Atelier</div>
+              <div class="contact-info-val">Rue François-Dussaud 3-5-7<br>1211 Geneva 26, Switzerland</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Privacy Policy Page -->
+  <div id="page-privacy" class="page">
+    <div class="policy-page">
+      <button class="back-btn" onclick="showPage('home')" style="margin-bottom: 24px;">← Go Back</button>
+      <h2 class="policy-title">Privacy Policy</h2>
+      <div class="policy-content">
+        <p>This Privacy Policy describes how your personal information is collected, used, and shared when you visit or make a purchase from this luxury watch e-commerce platform.</p>
+        
+        <h3>1. Personal Information We Collect</h3>
+        <p>When you place an order or contact our concierge, we collect specific personal information from you, including your name, shipping address, email address, phone number, and encrypted payment details. We secure this data inside private physical storage vaults with military-grade encryption keys.</p>
+        
+        <h3>2. How We Use Your Information</h3>
+        <p>We use the order data we collect exclusively to fulfill orders placed through our secure checkout system (including processing your credit card payment, arranging for armored courier shipping, and providing you with receipt confirmations).</p>
+        
+        <h3>3. Data Retention</h3>
+        <p>When you complete an transaction through the Site, we will maintain your Order Records for our tax and historic compliance archives unless you explicitly request us to purge this information from our secure systems.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Terms of Service Page -->
+  <div id="page-terms" class="page">
+    <div class="policy-page">
+      <button class="back-btn" onclick="showPage('home')" style="margin-bottom: 24px;">← Go Back</button>
+      <h2 class="policy-title">Terms of Service</h2>
+      <div class="policy-content">
+        <p>Welcome to ROLEX. By accessing our platform, catalog, or securing transactions, you agree to be bound by the following terms and conditions.</p>
+        
+        <h3>1. Acquisition Restrictions</h3>
+        <p>All transactions processed on this platform are structured as legal luxury watch acquisitions. By completing a checkout, you declare that you are at least 18 years of age and possess the legal authorization and funds to proceed with high-value purchases.</p>
+        
+        <h3>2. Horological Authenticity</h3>
+        <p>Every watch displayed in our digital catalog represents a genuine luxury article certified by Swiss watchmakers. Visual assets displayed are proprietary, high-end studio productions and cannot be redistributed without prior authorization.</p>
+        
+        <h3>3. Limitation of Liability</h3>
+        <p>While we perfect the mechanisms of our clocks to remain standard within seconds, we are not liable for transient mechanical variance resulting from physical shocks, magnetizations, or deep pressure exposures that exceed individual model ratings.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. Return Policy Page -->
+  <div id="page-returns" class="page">
+    <div class="policy-page">
+      <button class="back-btn" onclick="showPage('home')" style="margin-bottom: 24px;">← Go Back</button>
+      <h2 class="policy-title">Return Policy</h2>
+      <div class="policy-content">
+        <p>We provide a comprehensive, fully-insured 30-day return policy for all unworn luxury watches in our catalog.</p>
+        
+        <h3>1. Condition Criteria</h3>
+        <p>The timepiece must be returned in pristine, brand-new condition. All security tags, clear protective plastic covers on sapphire crystals, presentation leather cases, user manuals, and chronometer certifications must remain completely intact and unaltered.</p>
+        
+        <h3>2. Armored Return Shipping</h3>
+        <p>For high-value assets, standard postal options are strictly forbidden. Upon request, our concierge will schedule a certified armored courier collection team to pick up the watch directly from your residence at our expense. This guarantees absolute safety.</p>
+        
+        <h3>3. Verification & Refund</h3>
+        <p>Once returned items are received at our main ateliers in Geneva, our master watchmakers will perform a microscopic multi-point verification to confirm caliber authenticity. Refunds are credited within 5 business days upon successful clearance.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. Shipping Information Page -->
+  <div id="page-shipping" class="page">
+    <div class="policy-page">
+      <button class="back-btn" onclick="showPage('home')" style="margin-bottom: 24px;">← Go Back</button>
+      <h2 class="policy-title">Shipping Information</h2>
+      <div class="policy-content">
+        <p>We arrange highly secure, fully-insured logistics channels to deliver your horological acquisitions safely.</p>
+        
+        <h3>1. Rates & Free Dispatch</h3>
+        <p>For acquisitions with a total value exceeding $10,000, we provide complimentary insured overnight armored courier delivery. For orders under $10,000, we charge a flat premium delivery fee of $150 to support armed courier tracking, specialized signature controls, and full transit insurance.</p>
+        
+        <h3>2. Delivery Protocol</h3>
+        <p>Due to the high-value nature of luxury Swiss timepieces, we do not support delivery to PO Boxes, unmanned lockers, or general drop sites. All deliveries require physical presence, direct identity verification with a state-issued passport or license, and a direct handwritten signature from the registered cardholder.</p>
+        
+        <h3>3. International Customs</h3>
+        <p>We serve over 180 countries worldwide. International shipments dispatch from Geneva, Switzerland with pre-cleared custom declarations. Any local import taxes or duties are calculated at checkout to ensure seamless delivery.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer (Visible on all pages) -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-logo-desc">
+        <h2>ROLEX</h2>
+        <p>Crafting high-precision Swiss mechanical watches since 1905. Combining classical watchmaking traditions with forward-thinking metallurgy patents and architectural designs that transcend time.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Collection</h4>
+        <ul class="footer-links">
+          <li><a class="footer-link" onclick="viewProduct(0)">Rolex Submariner</a></li>
+          <li><a class="footer-link" onclick="viewProduct(1)">AP Code 11.59</a></li>
+          <li><a class="footer-link" onclick="viewProduct(2)">Omega Speedmaster</a></li>
+          <li><a class="footer-link" onclick="viewProduct(3)">Altair Green Dial</a></li>
+          <li><a class="footer-link" onclick="viewProduct(4)">Lange 1815 Chrono</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul class="footer-links">
+          <li><a class="footer-link" onclick="showPage('about')">About Our History</a></li>
+          <li><a class="footer-link" onclick="showPage('contact')">Concierge Inquiry</a></li>
+          <li><a class="footer-link" onclick="handleCollectionClick()">Browse Catalog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal Support</h4>
+        <ul class="footer-links">
+          <li><a class="footer-link" onclick="showPage('privacy')">Privacy Policy</a></li>
+          <li><a class="footer-link" onclick="showPage('terms')">Terms of Service</a></li>
+          <li><a class="footer-link" onclick="showPage('returns')">Return Policy</a></li>
+          <li><a class="footer-link" onclick="showPage('shipping')">Shipping Information</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <div>© 2026 ROLEX Geneva. All Rights Reserved. Fully Certified Swiss Ateliers.</div>
+      <div style="display: flex; gap: 20px;">
+        <a class="footer-link" onclick="showPage('privacy')">Privacy</a>
+        <a class="footer-link" onclick="showPage('terms')">Terms</a>
+        <a class="footer-link" onclick="showPage('returns')">Returns</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-notif" aria-live="polite">
+    <div class="toast-icon">
+      <!-- Info Check icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <div class="toast-message" id="toast-message-text">Watch added to your acquisition vault.</div>
+  </div>
+
+  <!-- JAVASCRIPT FUNCTIONALITY -->
+  <script>
+    // Supabase Configuration is handled securely on the server-side proxy
+    async function seedProducts() {
+      try {
+        const response = await fetch('/api/products/seed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.warn('Seed products returned non-JSON response');
+          return;
+        }
+        const resData = await response.json();
+        console.log('Seed products response:', resData);
+      } catch (err) {
+        console.error('Seed products error:', err);
+      }
+    }
+
+    // Validation Helper Functions
+    function showError(inputEl, message) {
+      if (!inputEl) return;
+      inputEl.classList.add('invalid');
+      
+      // Find or create error-msg div inside the parent .form-group
+      const parent = inputEl.closest('.form-group');
+      if (!parent) return;
+      
+      let errorDiv = parent.querySelector('.error-msg');
+      if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'error-msg';
+        parent.appendChild(errorDiv);
+      }
+      errorDiv.innerText = message;
+      errorDiv.style.display = 'block';
+    }
+
+    function clearError(inputEl) {
+      if (!inputEl) return;
+      inputEl.classList.remove('invalid');
+      
+      const parent = inputEl.closest('.form-group');
+      if (!parent) return;
+      
+      const errorDiv = parent.querySelector('.error-msg');
+      if (errorDiv) {
+        errorDiv.style.display = 'none';
+        errorDiv.innerText = '';
+      }
+    }
+
+    function initValidationRealtime() {
+      const inputs = document.querySelectorAll('.form-input, .form-select');
+      inputs.forEach(input => {
+        input.addEventListener('input', () => {
+          clearError(input);
+        });
+        input.addEventListener('change', () => {
+          clearError(input);
+        });
+      });
+    }
+
+    // 1. WATCH COLLECTION DATABASE WITH ASSETS
+    let watches = [];
+
+    // Set Hero Floating Watch Image from assets
+    const heroFloatingWatchImg = document.getElementById('hero-floating-watch-img');
+    if (heroFloatingWatchImg) {
+      heroFloatingWatchImg.src = "/src/assets/images/hero_watch_floating_1782969814178.jpg";
+    }
+    
+    // Set About Hero and Banner BG images
+    const heritageImg = "/src/assets/images/about_heritage_1782969927997.jpg";
+    document.getElementById('about-hero-banner').style.backgroundImage = `linear-gradient(0deg, rgba(8,8,10,1) 0%, rgba(8,8,10,0.5) 100%), url('${heritageImg}')`;
+    document.getElementById('featured-banner-bg').style.backgroundImage = `linear-gradient(90deg, rgba(8,8,10,0.95) 0%, rgba(8,8,10,0.7) 50%, rgba(8,8,10,0.2) 100%), url('${heritageImg}')`;
+
+    // 2. STATE MANAGER
+    let cart = [];
+    let activePageId = 'home';
+    let detailQty = 1;
+
+    // 3. PAGE SYSTEM
+    function updateNavPills(pageId) {
+      const buttons = {
+        'home': document.getElementById('nav-btn-home'),
+        'collection': document.getElementById('nav-btn-collection'),
+        'about': document.getElementById('nav-btn-about'),
+        'contact': document.getElementById('nav-btn-contact'),
+      };
+      
+      for (const [key, btn] of Object.entries(buttons)) {
+        if (!btn) continue;
+        if (key === pageId) {
+          btn.style.background = '#c9a84c';
+          btn.style.color = '#000';
+          btn.style.fontWeight = '600';
+        } else {
+          btn.style.background = 'none';
+          btn.style.color = 'rgba(255,255,255,0.7)';
+          btn.style.fontWeight = 'normal';
+        }
+      }
+    }
+
+    function showPage(pageId) {
+      if (pageId === 'collection') {
+        handleCollectionClick();
+        return;
+      }
+
+      activePageId = pageId;
+      
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      
+      // Show active page
+      const activeEl = document.getElementById('page-' + pageId);
+      if (activeEl) activeEl.classList.add('active');
+      
+      // Scroll to top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Update nav active pill
+      updateNavPills(pageId);
+
+      // Special page render triggers
+      if (pageId === 'cart') {
+        renderCartPage();
+      } else if (pageId === 'checkout') {
+        renderCheckoutSummary();
+      }
+
+      // Automatically run scroll reveal on page changes
+      setTimeout(handleScrollReveal, 100);
+    }
+
+    function handleCollectionClick() {
+      updateNavPills('collection');
+      if (activePageId === 'home') {
+        const collSec = document.getElementById('collection');
+        if (collSec) collSec.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        showPage('home');
+        setTimeout(() => {
+          updateNavPills('collection');
+          const collSec = document.getElementById('collection');
+          if (collSec) collSec.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+    }
+
+    // 4. TOAST NOTIFICATION SYSTEM (Auto-hide 3 seconds)
+    let toastTimeout;
+    function triggerToast(message) {
+      const toast = document.getElementById('toast-notif');
+      const text = document.getElementById('toast-message-text');
+      
+      text.textContent = message;
+      toast.classList.add('show');
+      
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function showToast(message) {
+      triggerToast(message);
+    }
+
+    // 5. COMBINED SCROLL HANDLING & ON-SCROLL USE CASES
+    function handleScrollReveal() {
+      const reveals = document.querySelectorAll('.reveal');
+      const triggerBottom = window.innerHeight * 0.85;
+      
+      reveals.forEach(reveal => {
+        const rect = reveal.getBoundingClientRect();
+        if (rect.top < triggerBottom) {
+          reveal.classList.add('active');
+        }
+      });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+
+    window.addEventListener('scroll', () => {
+      const scrollPos = window.scrollY;
+      
+      // Use Case B: Navbar Active Scrolled State
+      const mainNav = document.getElementById('main-nav');
+      if (mainNav) {
+        if (scrollPos > 60) {
+          mainNav.style.background = 'rgba(8,8,10,0.95)';
+          mainNav.style.backdropFilter = 'blur(20px)';
+          mainNav.style.borderBottom = '1px solid rgba(201,168,76,0.1)';
+        } else {
+          mainNav.style.background = 'transparent';
+          mainNav.style.backdropFilter = 'none';
+          mainNav.style.borderBottom = 'none';
+        }
+      }
+      
+      // Use Case C: Top Scroll Progress Indicator Bar
+      const progressBar = document.getElementById('scroll-progress-bar');
+      if (progressBar) {
+        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const scrollPercent = totalHeight > 0 ? (scrollPos / totalHeight) * 100 : 0;
+        progressBar.style.width = scrollPercent + '%';
+      }
+      
+      // Use Case D: Scroll-to-Top Floating Button visibility
+      const scrollTopBtn = document.getElementById('scroll-to-top-btn');
+      if (scrollTopBtn) {
+        if (scrollPos > 400) {
+          scrollTopBtn.classList.add('show');
+        } else {
+          scrollTopBtn.classList.remove('show');
+        }
+      }
+      
+      // Use Case E: Parallax Depth Translation on Floating Hero Watch
+      const watchImg = document.getElementById('hero-floating-watch-img');
+      if (watchImg && activePageId === 'home') {
+        watchImg.style.transform = `translateY(${scrollPos * 0.12}px)`;
+      }
+      
+      // Use Case F: Scroll-to-Reveal animations
+      handleScrollReveal();
+    });
+
+    // 7. LOAD AND RENDER PRODUCTS FROM SUPABASE PROXY
+    async function loadProducts() {
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) {
+          throw new Error('Failed to fetch /api/products');
+        }
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Received non-JSON response from products API');
+        }
+        const { data, error } = await response.json();
+
+        if (error) {
+          console.error('Proxy load error:', error);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          console.log('No products found')
+          return
+        }
+
+        watches = data.map((p, i) => ({
+          idx: i,
+          id: p.id,
+          brand: p.brand || '',
+          name: p.Name || p.name || '',
+          price: Number(p.price) || 0,
+          img: p.image_url || '',
+          desc: p.description || '',
+          badge: p.badge || '',
+          stock: p.stock || 0,
+          specs: [
+            ['Brand', p.brand || ''],
+            ['Model', p.Name || p.name || ''],
+            ['Price', '$' + (Number(p.price)||0).toLocaleString()],
+            ['Stock', (p.stock || 0) + ' units']
+          ]
+        }))
+
+        renderAllGrids()
+
+      } catch(err) {
+        console.error('Load error:', err)
+      }
+    }
+
+    function renderAllGrids() {
+      const grids = document.querySelectorAll(
+        '#collection-grid, #home-collection-grid, .grid-5'
+      )
+      
+      grids.forEach(grid => {
+        grid.innerHTML = watches.map((w, i) => `
+          <div class="watch-card ${i === 0 ? 'featured' : ''}" 
+               onclick="showProduct(${i})" 
+               style="cursor:pointer;">
+            <div class="card-img-wrap" style="position:relative;overflow:hidden;">
+              <img class="card-img" 
+                   src="${w.img}" 
+                   alt="${w.name}"
+                   style="width:100%;${i===0?'aspect-ratio:16/7':'aspect-ratio:4/3'};object-fit:cover;display:block;transition:transform 0.5s;"
+                   onerror="this.onerror=null;this.style.background='#1a1a1a';this.src=''"/>
+              ${w.badge ? `<div class="card-tag" style="position:absolute;top:14px;left:14px;background:#c9a84c;color:#000;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;border-radius:50px;">${w.badge}</div>` : ''}
+            </div>
+            <div class="card-body" style="padding:26px;">
+              <div class="card-brand" style="font-size:9px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin-bottom:6px;">${w.brand}</div>
+              <div class="card-name" style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:6px;">${w.name}</div>
+              <div class="card-desc" style="font-size:12px;color:rgba(240,237,232,0.55);margin-bottom:16px;line-height:1.6;">${w.desc}</div>
+              <div class="card-row" style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);">
+                <div class="card-price" style="font-size:22px;font-weight:700;color:#c9a84c;">$${w.price.toLocaleString()}</div>
+                <button class="card-add" 
+                  onclick="event.stopPropagation();addToCart(${i})"
+                  style="background:#c9a84c;color:#000;border:none;padding:9px 22px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;">
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('')
+      })
+    }
+
+    // 8. RENDER PRODUCT DETAIL PAGE
+    function showProduct(index) {
+      const watch = watches[index];
+      if (!watch) return;
+      
+      detailQty = 1; // reset quantity selector to 1 on opening detail view
+      
+      // Ensure getters for backward compatibility
+      if (!watch.image) {
+        Object.defineProperty(watch, 'image', {
+          get: function() { return this.img; }
+        });
+      }
+      if (!watch.description) {
+        Object.defineProperty(watch, 'description', {
+          get: function() { return this.desc; }
+        });
+      }
+      
+      const container = document.getElementById('product-detail-container');
+      
+      let specsHtml = "";
+      if (watch.specs && Array.isArray(watch.specs)) {
+        specsHtml = watch.specs.map(spec => `
+          <tr class="spec-row">
+            <td class="spec-label">${spec[0]}</td>
+            <td class="spec-value">${spec[1]}</td>
+          </tr>
+        `).join('');
+      } else {
+        specsHtml = `
+          <tr class="spec-row">
+            <td class="spec-label">Brand</td>
+            <td class="spec-value">${watch.brand}</td>
+          </tr>
+          <tr class="spec-row">
+            <td class="spec-label">Price</td>
+            <td class="spec-value">$${watch.price.toLocaleString()}</td>
+          </tr>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="product-image-container">
+          <img src="${watch.img}" class="product-large-img" alt="${watch.name}"
+            onerror="this.onerror=null; this.src='https://via.placeholder.com/400x300/141416/c9a84c?text=Watch'"/>
+        </div>
+        <div class="product-info-container">
+          <div class="product-brand">${watch.brand}</div>
+          <h2 class="product-name font-serif">${watch.name}</h2>
+          <div class="product-price">$${watch.price.toLocaleString()}</div>
+          <p class="product-desc">${watch.desc || ''}</p>
+          
+          <table class="spec-table">
+            ${specsHtml}
+          </table>
+
+          <div class="product-actions">
+            <div class="qty-selector">
+              <button class="qty-btn" onclick="updateDetailQty(-1)" aria-label="Decrease quantity">−</button>
+              <span class="qty-num" id="detail-qty-num">1</span>
+              <button class="qty-btn" onclick="updateDetailQty(1)" aria-label="Increase quantity">+</button>
+            </div>
+            <button class="add-to-cart-full" onclick="addDetailToCart(${index})">Add to Cart</button>
+          </div>
+          
+          <button class="view-cart-ghost" onclick="showPage('cart')">View Cart Vault</button>
+        </div>
+      `;
+      
+      showPage('product-detail');
+    }
+
+    function viewProduct(id) {
+      const idx = watches.findIndex(w => w.idx === id);
+      if (idx !== -1) {
+        showProduct(idx);
+      } else {
+        showProduct(0);
+      }
+    }
+
+    function updateDetailQty(delta) {
+      detailQty = Math.max(1, detailQty + delta);
+      document.getElementById('detail-qty-num').textContent = detailQty;
+    }
+
+    function addDetailToCart(index) {
+      addToCart(index, detailQty);
+    }
+
+    // 9. CART STATE ENGINE
+    function addToCart(index, quantity = 1) {
+      const watch = watches[index];
+      if (!watch) return;
+      
+      const id = index; // Use the index as the cart item id/idx
+      const cartItem = cart.find(item => item.id === id);
+      if (cartItem) {
+        cartItem.quantity += quantity;
+      } else {
+        // Ensure watch has getters for image and description for backward compatibility
+        if (!watch.image) {
+          Object.defineProperty(watch, 'image', {
+            get: function() { return this.img; }
+          });
+        }
+        if (!watch.description) {
+          Object.defineProperty(watch, 'description', {
+            get: function() { return this.desc; }
+          });
+        }
+        cart.push({ id, watch, quantity });
+      }
+      
+      triggerToast(`Added ${quantity} × ${watch.name} to your acquisition vault.`);
+      updateCart();
+    }
+
+    function updateCartBadge() {
+      const totalCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+      const navCart = document.getElementById('nav-cart-count');
+      if (navCart) navCart.textContent = totalCount;
+      const cartCount = document.getElementById('cartCount');
+      if (cartCount) cartCount.textContent = totalCount;
+    }
+
+    function updateCart() {
+      cart.forEach(item => {
+        if (!Object.prototype.hasOwnProperty.call(item, 'idx')) {
+          Object.defineProperty(item, 'idx', {
+            get: function() { return this.id; },
+            configurable: true,
+            enumerable: true
+          });
+        }
+        if (!Object.prototype.hasOwnProperty.call(item, 'qty')) {
+          Object.defineProperty(item, 'qty', {
+            get: function() { return this.quantity; },
+            set: function(val) { this.quantity = val; },
+            configurable: true,
+            enumerable: true
+          });
+        }
+      });
+      updateCartBadge();
+      if (typeof renderCartPage === 'function') {
+        renderCartPage();
+      }
+    }
+
+    function updateCartQuantity(id, delta) {
+      const item = cart.find(i => i.id === id);
+      if (!item) return;
+      
+      item.quantity += delta;
+      if (item.quantity <= 0) {
+        removeFromCart(id);
+      } else {
+        updateCartBadge();
+        renderCartPage();
+      }
+    }
+
+    function removeFromCart(id) {
+      const item = cart.find(i => i.id === id);
+      if (!item) return;
+      
+      cart = cart.filter(i => i.id !== id);
+      triggerToast(`Removed ${item.watch.name} from your acquisition vault.`);
+      updateCartBadge();
+      renderCartPage();
+    }
+
+    // 10. RENDER CART PAGE
+    function renderCartPage() {
+      const container = document.getElementById('cart-content-wrapper');
+      
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div class="cart-empty-state">
+            <div class="cart-empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            </div>
+            <p class="cart-empty-msg">Your acquisition vault is currently vacant.</p>
+            <button class="hero-btn-filled" onclick="handleCollectionClick()">Browse Collection</button>
+          </div>
+        `;
+        return;
+      }
+      
+      let itemsHtml = "";
+      let subtotal = 0;
+      
+      cart.forEach(item => {
+        const itemTotal = item.watch.price * item.quantity;
+        subtotal += itemTotal;
+        
+        itemsHtml += `
+          <div class="cart-item-row">
+            <div class="cart-item-thumb">
+              <img src="${item.watch.image}" alt="${item.watch.name}">
+            </div>
+            <div class="cart-item-info">
+              <div class="cart-item-brand">${item.watch.brand}</div>
+              <div class="cart-item-name">${item.watch.name}</div>
+              <div class="cart-item-qty-control">
+                <div class="cart-qty-inline">
+                  <button class="cart-qty-btn" onclick="updateCartQuantity(${item.id}, -1)">−</button>
+                  <span class="cart-qty-num">${item.quantity}</span>
+                  <button class="cart-qty-btn" onclick="updateCartQuantity(${item.id}, 1)">+</button>
+                </div>
+                <span class="cart-item-price">$${item.watch.price.toLocaleString()}</span>
+              </div>
+            </div>
+            <button class="cart-item-remove" onclick="removeFromCart(${item.id})" aria-label="Remove item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+        `;
+      });
+      
+      const shipping = subtotal > 10000 ? 0 : 150;
+      const total = subtotal + shipping;
+      
+      container.innerHTML = `
+        <div class="cart-grid-container">
+          <div class="cart-items-list">
+            ${itemsHtml}
+          </div>
+          <div class="summary-box">
+            <h3 class="summary-title font-serif">Acquisition Summary</h3>
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span>$${subtotal.toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>Insured Shipping</span>
+              <span>${shipping === 0 ? "FREE" : "$" + shipping}</span>
+            </div>
+            <div class="summary-row total-row">
+              <span>Total Price</span>
+              <span class="total-price">$${total.toLocaleString()}</span>
+            </div>
+            <button class="summary-btn-primary" onclick="showPage('checkout')">
+              Proceed to Secure Checkout
+            </button>
+            <button class="summary-btn-secondary" onclick="handleCollectionClick()">
+              Continue Browsing Collection
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // 11. RENDER CHECKOUT ORDER SUMMARY
+    function renderCheckoutSummary() {
+      const container = document.getElementById('checkout-summary-container');
+      
+      // Set a luxury wire transfer reference code dynamically
+      const wireRef = "RLX-WIRE-" + Math.floor(100000 + Math.random() * 900000);
+      const wireRefLbl = document.getElementById('wire-reference-lbl');
+      if (wireRefLbl) {
+        wireRefLbl.innerText = wireRef;
+      }
+
+      let subtotal = 0;
+      let listHtml = "";
+      
+      cart.forEach(item => {
+        subtotal += item.watch.price * item.quantity;
+        listHtml += `
+          <div class="summary-row" style="margin-bottom: 12px; font-size: 13.5px;">
+            <span>${item.quantity} × ${item.watch.name}</span>
+            <span style="color: var(--text);">$${(item.watch.price * item.quantity).toLocaleString()}</span>
+          </div>
+        `;
+      });
+      
+      const shipping = subtotal > 10000 ? 0 : 150;
+      const total = subtotal + shipping;
+      
+      container.innerHTML = `
+        <h3 class="summary-title font-serif">Your Acquisition</h3>
+        <div style="margin-bottom: 24px;">
+          ${listHtml}
+        </div>
+        <div class="summary-row" style="border-top: 1px solid rgba(240,237,232,0.05); padding-top: 16px;">
+          <span>Subtotal</span>
+          <span>$${subtotal.toLocaleString()}</span>
+        </div>
+        <div class="summary-row">
+          <span>Fully Insured Shipping</span>
+          <span>${shipping === 0 ? "FREE" : "$" + shipping}</span>
+        </div>
+        <div class="summary-row total-row" style="margin-bottom: 0; padding-bottom: 0;">
+          <span>Final Total</span>
+          <span class="total-price">$${total.toLocaleString()}</span>
+        </div>
+      `;
+    }
+
+    // --- MULTI-METHOD PAYMENT ENGINE ---
+    let selectedPaymentMethod = 'card';
+    let selectedCardBrand = 'Visa';
+    let isPayPalConnected = false;
+    let isApplePayAuthorized = false;
+
+    function switchPaymentMethod(method) {
+      selectedPaymentMethod = method;
+      
+      // Update Tab CSS classes
+      document.querySelectorAll('.payment-method-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      const activeTab = document.getElementById(`pay-tab-${method}`);
+      if (activeTab) activeTab.classList.add('active');
+      
+      // Update Panel visibility CSS classes
+      document.querySelectorAll('.payment-tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      const activePanel = document.getElementById(`pay-panel-${method}`);
+      if (activePanel) activePanel.classList.add('active');
+      
+      // Form fields required validation toggles
+      const cardName = document.getElementById('chk-cardname');
+      const cardNum = document.getElementById('chk-cardnum');
+      const cardExpiry = document.getElementById('chk-expiry');
+      const cardCvv = document.getElementById('chk-cvv');
+      
+      if (method === 'card') {
+        cardName.setAttribute('required', 'required');
+        cardNum.setAttribute('required', 'required');
+        cardExpiry.setAttribute('required', 'required');
+        cardCvv.setAttribute('required', 'required');
+      } else {
+        cardName.removeAttribute('required');
+        cardNum.removeAttribute('required');
+        cardExpiry.removeAttribute('required');
+        cardCvv.removeAttribute('required');
+      }
+
+      // Update Order Button label based on payment method
+      const orderBtn = document.querySelector('#checkout-form button[type="submit"]');
+      if (orderBtn) {
+        if (method === 'card') {
+          orderBtn.innerHTML = 'Place Order & Complete Purchase →';
+        } else if (method === 'paypal') {
+          orderBtn.innerHTML = 'Link & Pay with PayPal →';
+        } else if (method === 'apple') {
+          orderBtn.innerHTML = 'Pay with Apple Pay →';
+        } else if (method === 'wire') {
+          orderBtn.innerHTML = 'Request Bank Wire Invoice →';
+        }
+      }
+    }
+
+    function selectCardBrand(brand) {
+      selectedCardBrand = brand;
+      document.querySelectorAll('.card-brand-badge').forEach(badge => {
+        badge.classList.remove('active');
+      });
+      
+      const brandIdMap = {
+        'Visa': 'brand-visa',
+        'Mastercard': 'brand-mastercard',
+        'AMEX': 'brand-amex',
+        'Discover': 'brand-discover'
+      };
+      
+      const badgeId = brandIdMap[brand];
+      if (badgeId) {
+        const badge = document.getElementById(badgeId);
+        if (badge) badge.classList.add('active');
+      }
+    }
+
+    function detectCardBrand(value) {
+      const cleanVal = value.replace(/\s+/g, '');
+      if (cleanVal.startsWith('4')) {
+        selectCardBrand('Visa');
+      } else if (cleanVal.startsWith('5')) {
+        selectCardBrand('Mastercard');
+      } else if (cleanVal.startsWith('3')) {
+        selectCardBrand('AMEX');
+      } else if (cleanVal.startsWith('6')) {
+        selectCardBrand('Discover');
+      }
+    }
+
+    function simulatePayPalAuth(event) {
+      if (event) event.preventDefault();
+      
+      const statusText = document.getElementById('paypal-status-text');
+      const btnText = document.getElementById('paypal-btn-text');
+      
+      if (isPayPalConnected) {
+        isPayPalConnected = false;
+        statusText.innerHTML = 'Account Not Connected';
+        statusText.style.color = '#ff4d4d';
+        btnText.innerHTML = 'Link PayPal Account';
+        return;
+      }
+
+      statusText.innerHTML = 'Connecting secure PayPal tunnel...';
+      statusText.style.color = 'var(--gold-light)';
+      
+      setTimeout(() => {
+        isPayPalConnected = true;
+        statusText.innerHTML = '<span style="color: #2ed573;">✔ Account Connected</span> (pre-approved: client.acquisition@luxury.com)';
+        btnText.innerHTML = 'Disconnect Account';
+      }, 800);
+    }
+
+    function simulateApplePay(event) {
+      if (event) event.preventDefault();
+      
+      const statusText = document.getElementById('apple-status-text');
+      const btnEl = document.getElementById('applepay-btn-el');
+      
+      if (isApplePayAuthorized) {
+        isApplePayAuthorized = false;
+        statusText.innerHTML = 'Not Pre-authorized';
+        statusText.style.color = '#ff4d4d';
+        btnEl.innerHTML = 'Authenticate with Apple Pay';
+        return;
+      }
+
+      statusText.innerHTML = 'Contacting Apple Secure Element...';
+      statusText.style.color = 'var(--gold-light)';
+      
+      setTimeout(() => {
+        isApplePayAuthorized = true;
+        statusText.innerHTML = '<span style="color: #2ed573;">✔ Touch ID/Face ID Verified</span>';
+        btnEl.innerHTML = 'Reset Biometrics';
+      }, 800);
+    }
+
+    // 12. CHECKOUT SUBMISSION & WIRE INVOICE
+    async function handlePlaceOrder(event) {
+      if (event) event.preventDefault();
+      await placeOrder();
+    }
+
+    async function placeOrder() {
+      const firstVal = document.getElementById('chk-first')?.value || '';
+      const lastVal = document.getElementById('chk-last')?.value || '';
+      const emailVal = document.getElementById('chk-email')?.value || '';
+      const phoneVal = document.getElementById('chk-phone')?.value || '';
+      const streetVal = document.getElementById('chk-street')?.value || '';
+      const cityVal = document.getElementById('chk-city')?.value || '';
+      const countryVal = document.getElementById('chk-country')?.value || '';
+      
+      const total = cart.reduce((s,i) => 
+        s + watches[i.idx].price * i.qty, 0)
+      
+      const orderData = {
+        name: (firstVal + ' ' + lastVal).trim(),
+        email: emailVal,
+        'phone no': phoneVal,
+        adress: streetVal,
+        city: cityVal,
+        country: countryVal,
+        total: total,
+        status: 'pending'
+      }
+
+      const orderItems = cart.map(i => ({
+        product_name: watches[i.idx].name,
+        price: watches[i.idx].price,
+        quantity: i.qty
+      }))
+
+      try {
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ orderData, orderItems })
+        });
+
+        if (!response.ok) {
+          throw new Error('Order submission failed');
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Received unexpected non-JSON response from server');
+        }
+
+        const resData = await response.json();
+        if (resData.error) {
+          showToast('Order failed. Please try again.')
+          return
+        }
+
+        cart = []
+        updateCart()
+        showPage('success')
+        showToast('Order placed successfully! ✓')
+      } catch (err) {
+        console.error('Order error:', err);
+        showToast('Order failed. Please try again.')
+      }
+    }
+
+    function clearCartAndGoHome() {
+      cart = [];
+      updateCartBadge();
+      showPage('home');
+    }
+
+    // 13. CONCIERGE CONTACT FORM SUBMISSION
+    async function handleContactSubmit(event) {
+      if (event) event.preventDefault();
+      await sendMessage();
+    }
+
+    async function sendMessage() {
+      const nameVal = document.getElementById('cnt-name')?.value || '';
+      const emailVal = document.getElementById('cnt-email')?.value || '';
+      const subjectVal = document.getElementById('cnt-subject')?.value || '';
+      const messageVal = document.getElementById('cnt-message')?.value || '';
+
+      const contactData = {
+        name: nameVal,
+        email: emailVal,
+        subject: subjectVal,
+        message: messageVal
+      };
+
+      try {
+        const response = await fetch('/api/contacts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(contactData)
+        });
+
+        if (!response.ok) {
+          throw new Error('Contact failed');
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Received unexpected non-JSON response from server');
+        }
+
+        const resData = await response.json();
+        if (resData.error) {
+          showToast('Failed to send. Please try again.');
+          return;
+        }
+
+        showToast('Message sent! We will reply within 24 hours ✓')
+      } catch (err) {
+        console.error('Contact error:', err);
+        showToast('Failed to send. Please try again.')
+      }
+    }
+
+    function toggleMobileMenu() {
+      const drawer = document.getElementById('mobile-menu-drawer');
+      if (drawer) {
+        if (drawer.style.display === 'flex') {
+          drawer.style.opacity = '0';
+          setTimeout(() => {
+            drawer.style.display = 'none';
+          }, 300);
+        } else {
+          drawer.style.display = 'flex';
+          drawer.style.opacity = '0';
+          // trigger layout reflow
+          drawer.offsetHeight;
+          drawer.style.opacity = '1';
+        }
+      }
+    }
+
+    function handleMobileNav(pageId) {
+      toggleMobileMenu();
+      showPage(pageId);
+    }
+
+    // INITIALIZATION
+    window.addEventListener('load', () => {
+      const video = document.getElementById('hero-video')
+      if (video) {
+        video.play().catch(() => {
+          video.muted = true
+          video.play()
+        })
+
+        window.addEventListener('scroll', () => {
+          const scrollY = window.scrollY
+          const maxScroll = window.innerHeight
+          const fraction = Math.min(scrollY / maxScroll, 1)
+          
+          if (video.duration) {
+            video.currentTime = fraction * video.duration
+          }
+        }, { passive: true })
+      }
+    })
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await seedProducts();
+      await loadProducts();
+      updateCartBadge();
+      initValidationRealtime();
+
+      // PROBLEM 2 — Fix scroll animations
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible')
+          }
+        })
+      }, { threshold: 0.15 })
+
+      document.querySelectorAll('.watch-card, .stat, .section-title, .section-label, .featured-banner, .value-card').forEach(el => {
+        el.classList.add('scroll-hidden')
+        observer.observe(el)
+      })
+    });
+
+    window.addEventListener('load', () => {
+      loadProducts();
+    });
+  </script>
+</body>
+</html>
