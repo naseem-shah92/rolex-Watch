@@ -3267,19 +3267,124 @@
     // Supabase Configuration is handled securely on the server-side proxy
     async function seedProducts() {
       try {
-        const response = await fetch('/api/products/seed', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
+        let success = false;
+        try {
+          const response = await fetch('/api/products/seed', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const resData = await response.json();
+            console.log('Seed products response:', resData);
+            success = resData.success;
           }
-        });
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.warn('Seed products returned non-JSON response');
-          return;
+        } catch (err) {
+          console.log('API proxy seed failed, trying direct Supabase check/seed:', err);
         }
-        const resData = await response.json();
-        console.log('Seed products response:', resData);
+
+        if (!success) {
+          // Direct Supabase check/seed
+          const SUPABASE_URL = "https://jjselsikkgcixhhjxyfr.supabase.co";
+          const SUPABASE_KEY = "sb_publishable_pyjSxC9S9jjRqoF9wf0FLw_9_QUJK8y";
+          const supabaseHeaders = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+          };
+
+          // Check if Products or products table has items
+          let hasProducts = false;
+          try {
+            const resCheck = await fetch(`${SUPABASE_URL}/rest/v1/Products?select=id&limit=1`, { headers: supabaseHeaders });
+            if (resCheck.status === 200) {
+              const d = await resCheck.json();
+              if (d && d.length > 0) hasProducts = true;
+            }
+          } catch (e) {}
+
+          if (!hasProducts) {
+            try {
+              const resCheck2 = await fetch(`${SUPABASE_URL}/rest/v1/products?select=id&limit=1`, { headers: supabaseHeaders });
+              if (resCheck2.status === 200) {
+                const d = await resCheck2.json();
+                if (d && d.length > 0) hasProducts = true;
+              }
+            } catch (e) {}
+          }
+
+          if (hasProducts) {
+            console.log('Products already seeded directly in Supabase');
+            return;
+          }
+
+          const productsToSeed = [
+            {
+              brand: 'Rolex',
+              Name: 'Submariner Date',
+              price: 14100,
+              image_url: 'https://res.cloudinary.com/vpliervv/image/upload/watch1.jpg',
+              description: 'The iconic divers watch waterproof to 300 metres.',
+              badge: 'Bestseller',
+              stock: 10
+            },
+            {
+              brand: 'Audemars Piguet',
+              Name: 'Code 11.59 Black',
+              price: 32500,
+              image_url: 'https://res.cloudinary.com/vpliervv/image/upload/watch2.jpg',
+              description: 'Rose gold case black lacquered dial.',
+              badge: 'Limited',
+              stock: 5
+            },
+            {
+              brand: 'Omega',
+              Name: 'Speedmaster Moonwatch',
+              price: 7450,
+              image_url: 'https://res.cloudinary.com/vpliervv/image/upload/watch3.jpg',
+              description: 'First watch worn on the moon.',
+              badge: 'Iconic',
+              stock: 8
+            },
+            {
+              brand: 'Altair',
+              Name: 'Automatic Green Dial',
+              price: 3200,
+              image_url: 'https://res.cloudinary.com/vpliervv/image/upload/watch4.jpg',
+              description: 'Modern elegance Swiss automatic movement.',
+              badge: 'New',
+              stock: 15
+            },
+            {
+              brand: 'A. Lange & Sohne',
+              Name: '1815 Chronograph',
+              price: 48000,
+              image_url: 'https://res.cloudinary.com/vpliervv/image/upload/watch5.jpg',
+              description: 'German precision handcrafted movement.',
+              badge: 'Exclusive',
+              stock: 3
+            }
+          ];
+
+          // Try seeding Products table
+          let responseSeed = await fetch(`${SUPABASE_URL}/rest/v1/Products`, {
+            method: "POST",
+            headers: { ...supabaseHeaders, "Prefer": "return=representation" },
+            body: JSON.stringify(productsToSeed)
+          });
+
+          if (responseSeed.status !== 201) {
+            // Try fallback to products
+            await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+              method: "POST",
+              headers: { ...supabaseHeaders, "Prefer": "return=representation" },
+              body: JSON.stringify(productsToSeed)
+            });
+          }
+          console.log('Seeded directly to Supabase');
+        }
       } catch (err) {
         console.error('Seed products error:', err);
       }
@@ -3503,22 +3608,46 @@
       handleScrollReveal();
     });
 
-    // 7. LOAD AND RENDER PRODUCTS FROM SUPABASE PROXY
+    // 7. LOAD AND RENDER PRODUCTS FROM SUPABASE PROXY (WITH DIRECT CLIENT FALLBACK)
     async function loadProducts() {
       try {
-        const response = await fetch('/api/products');
-        if (!response.ok) {
-          throw new Error('Failed to fetch /api/products');
+        let data;
+        try {
+          const response = await fetch('/api/products');
+          if (response.ok) {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const resJson = await response.json();
+              data = resJson.data;
+            }
+          }
+        } catch (e) {
+          console.log('API proxy failed, falling back to direct Supabase fetch:', e);
         }
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Received non-JSON response from products API');
-        }
-        const { data, error } = await response.json();
 
-        if (error) {
-          console.error('Proxy load error:', error);
-          return;
+        if (!data) {
+          // Fallback to direct Supabase REST API
+          const SUPABASE_URL = "https://jjselsikkgcixhhjxyfr.supabase.co";
+          const SUPABASE_KEY = "sb_publishable_pyjSxC9S9jjRqoF9wf0FLw_9_QUJK8y";
+          const supabaseHeaders = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+          };
+
+          // Try Products table first
+          let response = await fetch(`${SUPABASE_URL}/rest/v1/Products?select=*&order=id.asc`, { headers: supabaseHeaders });
+          if (response.ok) {
+            data = await response.json();
+          }
+          
+          if (!data || data.length === 0) {
+            // Try fallback to products table
+            response = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=id.asc`, { headers: supabaseHeaders });
+            if (response.ok) {
+              data = await response.json();
+            }
+          }
         }
 
         if (!data || data.length === 0) {
@@ -4061,6 +4190,7 @@
         quantity: i.qty
       }))
 
+      let orderSuccess = false;
       try {
         const response = await fetch('/api/orders', {
           method: 'POST',
@@ -4070,27 +4200,79 @@
           body: JSON.stringify({ orderData, orderItems })
         });
 
-        if (!response.ok) {
-          throw new Error('Order submission failed');
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const resData = await response.json();
+            if (!resData.error) {
+              orderSuccess = true;
+            }
+          }
         }
+      } catch (err) {
+        console.log('Order proxy failed, trying direct Supabase insertion:', err);
+      }
 
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Received unexpected non-JSON response from server');
+      if (!orderSuccess) {
+        // Direct Supabase insert
+        try {
+          const SUPABASE_URL = "https://jjselsikkgcixhhjxyfr.supabase.co";
+          const SUPABASE_KEY = "sb_publishable_pyjSxC9S9jjRqoF9wf0FLw_9_QUJK8y";
+          const supabaseHeaders = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          };
+
+          const responseOrder = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+            method: "POST",
+            headers: supabaseHeaders,
+            body: JSON.stringify([orderData])
+          });
+
+          if (!responseOrder.ok) {
+            throw new Error('Direct order insert failed');
+          }
+
+          const insertedOrders = await responseOrder.json();
+          const order = insertedOrders[0];
+          const orderId = order ? (order.id || order["id,"]) : null;
+
+          if (!order || !orderId) {
+            throw new Error('No order ID returned from direct insert');
+          }
+
+          // Insert order items
+          const itemsWithOrderId = orderItems.map(i => ({
+            order_id: orderId,
+            product_name: i.product_name,
+            price: i.price,
+            quantity: i.quantity
+          }));
+
+          const responseItems = await fetch(`${SUPABASE_URL}/rest/v1/order_items`, {
+            method: "POST",
+            headers: supabaseHeaders,
+            body: JSON.stringify(itemsWithOrderId)
+          });
+
+          if (!responseItems.ok) {
+            throw new Error('Direct order items insert failed');
+          }
+
+          orderSuccess = true;
+        } catch (directErr) {
+          console.error('Direct order failed:', directErr);
         }
+      }
 
-        const resData = await response.json();
-        if (resData.error) {
-          showToast('Order failed. Please try again.')
-          return
-        }
-
+      if (orderSuccess) {
         cart = []
         updateCart()
         showPage('success')
         showToast('Order placed successfully! ✓')
-      } catch (err) {
-        console.error('Order error:', err);
+      } else {
         showToast('Order failed. Please try again.')
       }
     }
@@ -4120,6 +4302,7 @@
         message: messageVal
       };
 
+      let contactSuccess = false;
       try {
         const response = await fetch('/api/contacts', {
           method: 'POST',
@@ -4129,24 +4312,47 @@
           body: JSON.stringify(contactData)
         });
 
-        if (!response.ok) {
-          throw new Error('Contact failed');
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const resData = await response.json();
+            if (!resData.error) {
+              contactSuccess = true;
+            }
+          }
         }
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Received unexpected non-JSON response from server');
-        }
-
-        const resData = await response.json();
-        if (resData.error) {
-          showToast('Failed to send. Please try again.');
-          return;
-        }
-
-        showToast('Message sent! We will reply within 24 hours ✓')
       } catch (err) {
-        console.error('Contact error:', err);
+        console.log('Contact proxy failed, trying direct Supabase insertion:', err);
+      }
+
+      if (!contactSuccess) {
+        try {
+          const SUPABASE_URL = "https://jjselsikkgcixhhjxyfr.supabase.co";
+          const SUPABASE_KEY = "sb_publishable_pyjSxC9S9jjRqoF9wf0FLw_9_QUJK8y";
+          const supabaseHeaders = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          };
+
+          const responseContact = await fetch(`${SUPABASE_URL}/rest/v1/contacts`, {
+            method: "POST",
+            headers: supabaseHeaders,
+            body: JSON.stringify([contactData])
+          });
+
+          if (responseContact.ok) {
+            contactSuccess = true;
+          }
+        } catch (directErr) {
+          console.error('Direct contact failed:', directErr);
+        }
+      }
+
+      if (contactSuccess) {
+        showToast('Message sent! We will reply within 24 hours ✓')
+      } else {
         showToast('Failed to send. Please try again.')
       }
     }
