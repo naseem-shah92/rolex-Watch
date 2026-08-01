@@ -1,20 +1,26 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+  <h1>Luxury Watch Collection</h1>
+  <p><b>Time is Perfected</b></p>
 </div>
 
-# Run and deploy your AI Studio app
+## Overview
 
-This contains everything you need to run your app locally.
+A concept, high-end luxury watch e-commerce website featuring interactive scroll-controlled video, a collection grid, product detail pages, a working shopping cart, and a mock checkout flow.
 
-View your app in AI Studio: https://ai.studio/apps/fbfe4567-8e37-4adb-8305-b32a1bd685a9
+> Independent demo/portfolio project, not affiliated with any real watch brand.
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+React 19, TypeScript, Vite 6, Tailwind CSS 4, Framer Motion, Express + TSX
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. `npm install`
+2. Set `GEMINI_API_KEY` in `.env.local`
+3. `npm run dev`
+4. `npm run build`
+5. `npm start`
+
+## Author
+
+**Muhammad Aaban Shah**
