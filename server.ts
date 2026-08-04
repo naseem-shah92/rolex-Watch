@@ -1,10 +1,9 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
   app.use(express.json());
 
@@ -232,7 +231,20 @@ async function startServer() {
   });
 
   // Vite / static file serving
-  if (process.env.NODE_ENV !== "production") {
+  const isBundled = typeof __dirname !== "undefined" && __dirname.includes("dist");
+  let useVite = false;
+
+  if (!isBundled && process.env.NODE_ENV !== "production") {
+    try {
+      await import("vite");
+      useVite = true;
+    } catch (e) {
+      console.warn("Vite is not available in this environment. Falling back to static production mode serving.");
+    }
+  }
+
+  if (useVite) {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
@@ -242,7 +254,11 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    const distPath = isBundled 
+      ? __dirname 
+      : path.join(process.cwd(), "dist");
+
+    console.log(`Production Mode: Serving static files from: ${distPath}`);
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

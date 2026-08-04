@@ -1,10 +1,7 @@
 {
-  "name": "luxury-watch-collection",
-  "version": "0.0.0",
-  "description": "A complete, high-end luxury watch e-commerce concept website featuring interactive scroll-controlled video, a collection grid, product details, an active shopping cart, and a mock checkout flow.",
-  "author": "Muhammad Aaban Shah",
-  "license": "MIT",
+  "name": "react-example",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
