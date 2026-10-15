@@ -1,6 +1,9 @@
 import express from "express";
 import path from "path";
+import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
+
+dotenv.config();
 
 async function startServer() {
   const app = express();
@@ -8,8 +11,12 @@ async function startServer() {
 
   app.use(express.json());
 
-  const SUPABASE_URL = "https://jjselsikkgcixhhjxyfr.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_pyjSxC9S9jjRqoF9wf0FLw_9_QUJK8y";
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_KEY in .env");
+  }
 
   const supabaseHeaders = {
     "apikey": SUPABASE_KEY,
@@ -17,28 +24,66 @@ async function startServer() {
     "Content-Type": "application/json",
   };
 
+  async function readSupabaseJson(response: Response) {
+    const text = await response.text();
+    if (!text) return null;
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
+  async function fetchProductsFromTable(tableName: string) {
+    const url = `${SUPABASE_URL}/rest/v1/${tableName}?select=*&order=id.asc`;
+    const response = await fetch(url, { headers: supabaseHeaders });
+    const body = await readSupabaseJson(response);
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      tableName,
+      body,
+    };
+  }
+
   // 1. GET /api/products
   app.get("/api/products", async (req, res) => {
     try {
-      // Try Products table first
-      const url1 = `${SUPABASE_URL}/rest/v1/Products?select=*&order=id.asc`;
-      const response1 = await fetch(url1, { headers: supabaseHeaders });
-      
-      if (response1.status === 200) {
-        const data = await response1.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return res.json({ data });
-        }
+      const attempts = [
+        await fetchProductsFromTable("Products"),
+        await fetchProductsFromTable("products"),
+      ];
+
+      const successfulAttempt = attempts.find(
+        attempt => attempt.ok && Array.isArray(attempt.body) && attempt.body.length > 0
+      ) || attempts.find(
+        attempt => attempt.ok && Array.isArray(attempt.body)
+      );
+
+      if (successfulAttempt) {
+        return res.json({
+          data: successfulAttempt.body,
+          table: successfulAttempt.tableName,
+        });
       }
-      
-      // Fallback to products table
-      const url2 = `${SUPABASE_URL}/rest/v1/products?select=*&order=id.asc`;
-      const response2 = await fetch(url2, { headers: supabaseHeaders });
-      const data2 = await response2.json();
-      return res.json({ data: data2 });
+
+      const details = attempts.map(({ tableName, status, body }) => ({
+        tableName,
+        status,
+        body,
+      }));
+
+      console.error("Supabase products fetch failed:", details);
+      return res.status(502).json({
+        data: [],
+        error: "Could not load products from Supabase",
+        details,
+      });
     } catch (err: any) {
       console.error("API Error in GET /api/products:", err);
-      return res.status(500).json({ error: err.message || "Internal server error" });
+      return res.status(500).json({ data: [], error: err.message || "Internal server error" });
     }
   });
 
@@ -127,9 +172,10 @@ async function startServer() {
         body: JSON.stringify(productsToSeed)
       });
 
-      if (responseSeed1.status === 201) {
+      if (responseSeed1.ok) {
         return res.json({ success: true, message: "Seeded Products table" });
       }
+      const seed1Body = await readSupabaseJson(responseSeed1);
 
       // Try fallback to products
       const urlSeed2 = `${SUPABASE_URL}/rest/v1/products`;
@@ -138,6 +184,22 @@ async function startServer() {
         headers: { ...supabaseHeaders, "Prefer": "return=representation" },
         body: JSON.stringify(productsToSeed)
       });
+
+      if (!responseSeed2.ok) {
+        const seed2Body = await readSupabaseJson(responseSeed2);
+        console.error("Supabase seed failed:", {
+          Products: { status: responseSeed1.status, body: seed1Body },
+          products: { status: responseSeed2.status, body: seed2Body },
+        });
+        return res.status(502).json({
+          success: false,
+          error: "Could not seed products in Supabase",
+          details: {
+            Products: { status: responseSeed1.status, body: seed1Body },
+            products: { status: responseSeed2.status, body: seed2Body },
+          },
+        });
+      }
 
       return res.json({ success: true, message: "Seeded products table" });
     } catch (err: any) {

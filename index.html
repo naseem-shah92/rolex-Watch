@@ -3504,25 +3504,44 @@
     });
 
     // 7. LOAD AND RENDER PRODUCTS FROM SUPABASE PROXY
+    function renderProductMessage(message) {
+      const grids = document.querySelectorAll(
+        '#collection-grid, #home-collection-grid, .grid-5'
+      )
+
+      grids.forEach(grid => {
+        grid.innerHTML = `
+          <div style="grid-column:1/-1;text-align:center;padding:64px 20px;color:rgba(240,237,232,0.65);border:1px solid rgba(201,168,76,0.18);background:rgba(255,255,255,0.02);">
+            ${message}
+          </div>
+        `
+      })
+    }
+
     async function loadProducts() {
       try {
         const response = await fetch('/api/products');
-        if (!response.ok) {
-          throw new Error('Failed to fetch /api/products');
-        }
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           throw new Error('Received non-JSON response from products API');
         }
-        const { data, error } = await response.json();
+        const { data, error, details } = await response.json();
 
-        if (error) {
-          console.error('Proxy load error:', error);
+        if (!response.ok) {
+          console.error('Products API failed:', error, details);
+          renderProductMessage('Products could not be loaded. Please check Supabase table access and server logs.');
           return;
         }
 
-        if (!data || data.length === 0) {
+        if (error) {
+          console.error('Proxy load error:', error, details);
+          renderProductMessage('Products could not be loaded. Please check Supabase table access and server logs.');
+          return;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
           console.log('No products found')
+          renderProductMessage('No products found in Supabase yet.');
           return
         }
 
@@ -4217,7 +4236,7 @@
     });
 
     window.addEventListener('load', () => {
-      loadProducts();
+      if (!watches.length) loadProducts();
     });
   </script>
 </body>
